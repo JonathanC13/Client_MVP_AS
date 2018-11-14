@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Client_MVP</string>
+    <string name="s_btn_lvlUp">Level Up</string>
+    <string name="s_btn_lvlDn">Level Down</string>
+
+    <!-- DB strings -->
+    <string name="DB_server">local</string>
+    <string name="DB_port">3306</string>
+    <string name="DB_name">floor_collection</string>
+    <string name="DB_user">root</string>
+    <string name="DB_pass">Pa55w0rd?</string>
+
+    <string name="Floor_table">floor_collection_0</string>
+    <string name="Door_table">door_collection_0</string>
+    <string name="Image_table">Images_door</string>
+    <!-- -->
+</resources>

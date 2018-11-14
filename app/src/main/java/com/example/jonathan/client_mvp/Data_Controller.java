@@ -1,0 +1,329 @@
+package com.example.jonathan.client_mvp;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.Spinner;
+
+import java.io.File;
+
+
+import java.io.FileOutputStream;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import android.widget.RelativeLayout.LayoutParams;
+
+public class Data_Controller {
+
+    // <File system info>
+    private String curr_app_dir;
+    private String image_folder;
+    private String full_img_path;
+    private String jpg_ext;
+    private String closed_door;
+    private String open_door;
+
+    private String locked_door_image;
+    private String open_door_path;
+    // </File system info>
+
+    private float scale;
+
+    // List of floor/doors/button objects
+    List<Data_Collection> flr_dr_class_list = new ArrayList<Data_Collection>();
+
+    // pure string array to set the combobox(spinner) items
+    private List<String> arr_flr_name = new ArrayList<String>();
+
+    // List of placed doors
+    private List<button_struct> placed_doors = new ArrayList<button_struct>();
+
+    // ScrollView internal layout
+    ConstraintLayout grd_scr;
+
+    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale){
+        grd_scr = grd_s;
+        scale = IV_scale;
+
+        //curr_app_dir = appDIR;
+        image_folder = "/images/";
+        full_img_path = appDIR;
+
+        closed_door = "/closed_door.png";
+        open_door = "/open_door.png";
+
+        locked_door_image = full_img_path + closed_door;
+        open_door_path = full_img_path + open_door;
+
+    }
+
+    // Fill spinner, done in main activity, need context
+    public void set_combobox_items(Context main, Spinner cmbo, ImageView imgV, Button dnBtn){
+
+        arr_flr_name = new ArrayList<String>();
+
+        // fill an array with only the floor name, assuming already ordered from lowest to highest
+        for(Data_Collection flr : flr_dr_class_list){
+            //Log.v("TASK: ", flr.st_floor.getDisplayName());
+            arr_flr_name.add(flr.st_floor.getDisplayName());
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(main, android.R.layout.simple_spinner_item, arr_flr_name);
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Spinner sItems = cmbo;
+        sItems.setAdapter(adapter);
+        sItems.setSelection(0); // default first
+
+        // Set the initial floor plan
+        try {
+            String curr_flr = flr_dr_class_list.get(0).st_floor.getImgDir();
+
+            File f = new File(curr_flr);
+            //Log.v("TASK: ", curr_flr); // ~~~~~ WORKS UNTIL HERE, IMAGE NOT SHOWING, just may be incomplete coding and not error
+            //if(f.exists()) {
+              //  Log.v("TASK: ", "dir exists");
+            //} else {
+              //  Log.v("TASK: ", "dir not exists");
+            //}
+            // Retrieve image into bitmap
+            Bitmap loaded = BitmapFactory.decodeFile(f.getAbsolutePath());
+            //Log.v("TASK: ", "FILE SIZE: " + loaded.getByteCount());
+            //Log.v("TASK: ", "HEIGHT: " + loaded.getHeight());
+
+            // android:scaleType="center" , used for no scaling
+            // set imageView properties
+            //imgV.setScaleType(ImageView.ScaleType.CENTER);
+            //imgV.getLayoutParams().height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+            //imgV.getLayoutParams().width = RelativeLayout.LayoutParams.WRAP_CONTENT;
+
+            //imgV.getLayoutParams().height = 605;
+            //imgV.getLayoutParams().width = 800;
+
+            //get image properties
+            int set_width = loaded.getWidth();
+            int set_height = loaded.getHeight();
+
+            //Log.v("TASK: ", "BEFORE W: " + imgV.getLayoutParams().width + " H: " + imgV.getLayoutParams().height);
+            // set the image
+
+            // imageView properties
+            imgV.requestLayout();
+            imgV.getLayoutParams().width = (int) (set_width * scale);
+            imgV.getLayoutParams().height = (int) (set_height * scale);
+
+            imgV.setImageBitmap(loaded);
+
+            //Log.v("TASK: ", "AFTER W: " + imgV.getLayoutParams().width + " H: " + imgV.getLayoutParams().height);
+
+
+
+        } catch (Exception e){
+            //
+        }
+
+        // set down level button not clickable since this is the lowest floor
+        dnBtn.setClickable(false);
+
+        clear_prev_doors(main);
+
+        place_curr_doors(0, main);
+    }
+
+    // Get the bitmapimage for the selected index of the spinner, also clear and set the doors
+    public void updateFloor(Context main, int position, ImageView imgV){
+        String loadFile =flr_dr_class_list.get(position).st_floor.getImgDir();
+
+        // Retrieve image into bitmap
+        Bitmap loadedBI = BitmapFactory.decodeFile(loadFile);
+
+        //get image properties
+        int set_width = loadedBI.getWidth();
+        int set_height = loadedBI.getHeight();
+
+        // set the image
+
+        // imageView properties
+        imgV.requestLayout();
+        imgV.getLayoutParams().width = (int) (set_width * scale);
+        imgV.getLayoutParams().height = (int) (set_height * scale);
+
+        //Log.v("TASK: ", "AFTER W: " + imgV.getLayoutParams().width + " H: " + imgV.getLayoutParams().height);
+
+        imgV.setImageBitmap(loadedBI);
+
+        // clear prev doors
+        clear_prev_doors(main);
+
+        // Set current floor doors
+        place_curr_doors(position, main);
+
+    }
+
+    // Clear doors from previous floor
+    private void clear_prev_doors(Context main){
+
+        for(button_struct dr : placed_doors){
+            ImageButton curr_btn = (ImageButton) dr.getBtn();
+            grd_scr.removeView(curr_btn);
+        }
+    }
+
+    private void place_curr_doors(int floor_sel, Context main){
+
+        placed_doors = new ArrayList<button_struct>();
+
+        int door_size = 50;
+
+        // Retrieve image into bitmap
+        //Bitmap loaded = BitmapFactory.decodeFile(locked_door_image);
+        //Drawable locked_dr_draw = Drawable.createFromPath(locked_door_image);
+        //Bitmap loaded = BitmapFactory.decodeFile(locked_door_image);
+
+        // test add button
+        //set the properties for button
+        final ImageButton btnTag = new ImageButton(main);
+        int newID = 100;
+        btnTag.setId(newID);
+
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+        );
+        btnTag.setLayoutParams(params);
+        // set size of button
+        btnTag.requestLayout();
+        btnTag.getLayoutParams().width = (int) (50 *scale);
+        btnTag.getLayoutParams().height = (int) (50 *scale);
+
+        // NEED TO SET CONSTRAINTS IN ORDER TO SET MARGINS
+        ConstraintSet set1 = new ConstraintSet();
+        set1.clone(grd_scr);    // get existing constraints into ConstraintSet
+
+        set1.connect(btnTag.getId(), ConstraintSet.LEFT, R.id.grd_ScrollV, ConstraintSet.LEFT, 0);
+        set1.connect(btnTag.getId(), ConstraintSet.TOP, R.id.grd_ScrollV, ConstraintSet.TOP, 0);
+
+        btnTag.setTranslationY(50 * scale);
+        btnTag.setTranslationX(500 * scale); // ONLY THIS WORKS, doesnt need to set parent
+        //add button to the layout
+        grd_scr.addView(btnTag);
+
+        // resizing door image
+        //Drawable drawable = main.getResources().getDrawable(R.drawable.closed_door);
+        //Bitmap b = ((BitmapDrawable)drawable).getBitmap();
+        //Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 50, 50, false);
+
+        btnTag.setImageResource(R.drawable.closed_door);;
+        btnTag.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                //btnTag.setImageResource(android.R.color.transparent);
+                btnTag.setImageResource(R.drawable.open_door);
+            }
+        });
+/*
+        int i = 0;
+        for (door_struct dr : flr_dr_class_list.get(floor_sel).arr_doors){
+
+
+            // <set button attributes>
+            final ImageButton btn_new = new ImageButton(main);
+
+            btn_new.setId(i);
+            // set image on button
+            btn_new.setBackgroundDrawable(locked_dr_draw);
+            // Set default attributes
+            btn_new.setLayoutParams(new LayoutParams(door_size, door_size));
+            btn_new.setBackgroundColor(Color.RED);
+
+            // set the margins for the button
+            LayoutParams btn_lp = (RelativeLayout.LayoutParams) btn_new.getLayoutParams();
+            btn_lp.setMargins((int)dr.getLeft(),(int)dr.getTop(),(int)dr.getRight(),(int)dr.getBot());
+            btn_new.setLayoutParams(btn_lp);
+
+            // generic button click
+            btn_new.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+
+                    generic_button_click(v);
+
+                }
+            });
+
+            // </Set button attributes>
+
+            button_struct btn_cr = new button_struct(btn_new, dr.getDrIP(), i);
+            placed_doors.add(btn_cr);
+
+            i++;
+        }
+        */
+    }
+
+
+    private void generic_button_click(View v)
+    {
+        ImageButton IB = (ImageButton)v;
+        String button_IP = "";
+
+        // search button_struct placed_doors() List for the door and get its IP
+        for (button_struct btn : placed_doors)
+        {
+
+            if (IB.getId() == btn.getID())
+            {
+
+                button_IP = btn.getIP();
+                break;
+            }
+        }
+
+        // udp send to open door
+        //send_udp_msg("222.33");
+
+        // if ack receive that door is opened, change color of door to green for "opened" time
+        btn_colour_change(IB, 1);
+
+        // if ack receive for closed, change to red
+        btn_colour_change(IB, 0);
+    }
+
+    // Change colour of the button to green to indicate door has been opened, wait a time, and then change back to red
+    private void btn_colour_change(ImageButton btn_door, int o_flag)
+    {
+        if(o_flag == 1) {
+            btn_door.setBackgroundColor(Color.GREEN);
+
+            Drawable open_dr_draw = Drawable.createFromPath(open_door_path);
+
+            btn_door.setBackgroundDrawable(open_dr_draw);
+        } else {
+            btn_door.setBackgroundColor(Color.RED);
+
+            Drawable locked_dr_draw = Drawable.createFromPath(locked_door_image);
+
+            btn_door.setBackgroundDrawable(locked_dr_draw);
+        }
+    }
+
+    public String getFullImgPath(){
+        return full_img_path;
+    }
+
+}
