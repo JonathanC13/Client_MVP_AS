@@ -91,11 +91,15 @@ public class DB_Controller {
 
     Data_Controller Data_shr;
 
+    public DB_Controller(){}
+
+
     public DB_Controller(Context ct, Data_Controller Data_c) {
         Data_shr = Data_c;
         save_folder = Data_c.getFullImgPath() + "/images/";
 
-        // initialize by getting the door images
+        // initialize by getting the door icons, right not they are just in drawable folder of app
+        /*
         File mydir = ct.getDir("images", Context.MODE_PRIVATE); //Creating an internal dir;
         if (!mydir.exists()) {
             mydir.mkdirs();
@@ -151,17 +155,13 @@ public class DB_Controller {
                 }
 
             } catch (Exception e){}
-
         }
+        */
 
         // Initialize the floors and doors
         // wait for async task to finish
         //-LoadAllDoors();
-        try {
-            Object result = new LoadAllDoors().execute().get();
-        } catch (Exception e) {
-            Log.v("TASK: ", "door " + e.toString());
-        }
+        refreshDoors();
 
         //-LoadAllFloors();
         try {
@@ -169,6 +169,7 @@ public class DB_Controller {
         } catch (Exception e) {
             Log.v("TASK: ", "flr " + e.toString());
         }
+
 
         // Download floor image
         //Log.v("TASK: ", "POST: " + floorList.size());
@@ -208,6 +209,39 @@ public class DB_Controller {
 
         }
         //
+    }
+
+    public void refreshDoors(){
+        try {
+            Object result = new LoadAllDoors().execute().get();
+        } catch (Exception e) {
+            Log.v("TASK: ", "door " + e.toString());
+        }
+    }
+
+    public void setDoors(Data_Collection new_flr ,String doorID){
+        new_flr.arr_doors = new ArrayList<door_struct>();
+
+        for(HashMap<String, String> dr : doorList){
+            if(doorID.equals(dr.get(TAG_DR_ID))){
+
+                double[] door_margin_curr = new double[4];
+
+                // set margins
+                door_margin_curr[0] = Double.parseDouble(dr.get(TAG_DR_ML));
+                door_margin_curr[1] = Double.parseDouble(dr.get(TAG_DR_MT));
+                door_margin_curr[2] = Double.parseDouble(dr.get(TAG_DR_MR));
+                door_margin_curr[3] = Double.parseDouble(dr.get(TAG_DR_MB));
+
+                String dr_name = dr.get(TAG_DR_NM);
+                String dr_IP = dr.get(TAG_DR_IP);
+                //Log.v("TASK: ", "getdrs " + dr_name);
+
+                // create and add door to door list for this floor
+                new_flr.addDoor(dr_name, door_margin_curr,dr_IP);
+
+            }
+        }
     }
 
     public static Bitmap downloadImage(String url) throws MalformedURLException {
@@ -426,6 +460,9 @@ public class DB_Controller {
          * */
         protected String doInBackground(String... args) {
             jParserDr = new JSONParser();
+
+            doorList = new ArrayList<HashMap<String, String>>();
+
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
             // getting JSON string from URL
@@ -596,30 +633,10 @@ public class DB_Controller {
                         //Log.v("TASK: ", "getflrs " + dis_name);
 
                         // Look through door list and add relevant doors into this floor's collection
-                        for(HashMap<String, String> dr : doorList){
-                            if(doorID.equals(dr.get(TAG_DR_ID))){
+                        setDoors(new_flr, doorID);
 
-                                double[] door_margin_curr = new double[4];
-
-                                // set margins
-                                door_margin_curr[0] = Double.parseDouble(dr.get(TAG_DR_ML));
-                                door_margin_curr[1] = Double.parseDouble(dr.get(TAG_DR_MT));
-                                door_margin_curr[2] = Double.parseDouble(dr.get(TAG_DR_MR));
-                                door_margin_curr[3] = Double.parseDouble(dr.get(TAG_DR_MB));
-
-                                String dr_name = dr.get(TAG_DR_NM);
-                                String dr_IP = dr.get(TAG_DR_IP);
-                                //Log.v("TASK: ", "getdrs " + dr_name);
-
-                                // create and add door to door list for this floor
-                                new_flr.addDoor(dr_name, door_margin_curr,dr_IP);
-
-                            }
-                        }
                     }
                 }
-
-
             }
 
             return null;

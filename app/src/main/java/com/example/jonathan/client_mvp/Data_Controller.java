@@ -190,79 +190,61 @@ public class Data_Controller {
 
         placed_doors = new ArrayList<button_struct>();
 
-        int door_size = 50;
+        // refresh doors test
+        DB_Controller refDB = new DB_Controller();
+        refDB.refreshDoors();
+        refDB.setDoors(flr_dr_class_list.get(floor_sel), flr_dr_class_list.get(floor_sel).st_floor.getDoorID());
+
+        int door_size = (int) (50 * scale);
 
         // Retrieve image into bitmap
         //Bitmap loaded = BitmapFactory.decodeFile(locked_door_image);
         //Drawable locked_dr_draw = Drawable.createFromPath(locked_door_image);
         //Bitmap loaded = BitmapFactory.decodeFile(locked_door_image);
 
-        // test add button
-        //set the properties for button
-        final ImageButton btnTag = new ImageButton(main);
-        int newID = 100;
-        btnTag.setId(newID);
-
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT
-        );
-        btnTag.setLayoutParams(params);
-        // set size of button
-        btnTag.requestLayout();
-        btnTag.getLayoutParams().width = (int) (50 *scale);
-        btnTag.getLayoutParams().height = (int) (50 *scale);
-
-        // NEED TO SET CONSTRAINTS IN ORDER TO SET MARGINS
-        ConstraintSet set1 = new ConstraintSet();
-        set1.clone(grd_scr);    // get existing constraints into ConstraintSet
-
-        set1.connect(btnTag.getId(), ConstraintSet.LEFT, R.id.grd_ScrollV, ConstraintSet.LEFT, 0);
-        set1.connect(btnTag.getId(), ConstraintSet.TOP, R.id.grd_ScrollV, ConstraintSet.TOP, 0);
-
-        btnTag.setTranslationY(50 * scale);
-        btnTag.setTranslationX(500 * scale); // ONLY THIS WORKS, doesnt need to set parent
-        //add button to the layout
-        grd_scr.addView(btnTag);
-
-        // resizing door image
-        //Drawable drawable = main.getResources().getDrawable(R.drawable.closed_door);
-        //Bitmap b = ((BitmapDrawable)drawable).getBitmap();
-        //Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 50, 50, false);
-
-        btnTag.setImageResource(R.drawable.closed_door);;
-        btnTag.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                //btnTag.setImageResource(android.R.color.transparent);
-                btnTag.setImageResource(R.drawable.open_door);
-            }
-        });
-/*
+        //
         int i = 0;
         for (door_struct dr : flr_dr_class_list.get(floor_sel).arr_doors){
 
 
             // <set button attributes>
             final ImageButton btn_new = new ImageButton(main);
-
             btn_new.setId(i);
-            // set image on button
-            btn_new.setBackgroundDrawable(locked_dr_draw);
-            // Set default attributes
-            btn_new.setLayoutParams(new LayoutParams(door_size, door_size));
-            btn_new.setBackgroundColor(Color.RED);
 
-            // set the margins for the button
-            LayoutParams btn_lp = (RelativeLayout.LayoutParams) btn_new.getLayoutParams();
-            btn_lp.setMargins((int)dr.getLeft(),(int)dr.getTop(),(int)dr.getRight(),(int)dr.getBot());
-            btn_new.setLayoutParams(btn_lp);
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT
+            );
+            btn_new.setLayoutParams(params);
+
+            // set size of button
+            btn_new.requestLayout();
+            btn_new.getLayoutParams().width = door_size;
+            btn_new.getLayoutParams().height = door_size;
+
+            // NEED TO SET CONSTRAINTS IN ORDER TO SET MARGINS
+            ConstraintSet set1 = new ConstraintSet();
+            set1.clone(grd_scr);    // get existing constraints into ConstraintSet
+
+            set1.connect(btn_new.getId(), ConstraintSet.LEFT, R.id.grd_ScrollV, ConstraintSet.LEFT, 0);
+            set1.connect(btn_new.getId(), ConstraintSet.TOP, R.id.grd_ScrollV, ConstraintSet.TOP, 0);
+
+            // set image of closed door icon
+            btn_new.setImageResource(R.drawable.closed_door);
+
+            // Set position on the floor plan
+            double top_marg = dr.getTop() * scale;
+            double left_marg = dr.getLeft() * scale;
+            btn_new.setTranslationY((float)top_marg);
+            btn_new.setTranslationX((float)left_marg); // ONLY THIS WORK, setting margins didn't work with dynamically created
+
+            //add button to the layout
+            grd_scr.addView(btn_new);
 
             // generic button click
             btn_new.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-
-                    generic_button_click(v);
-
+                    btn_new.setImageResource(R.drawable.open_door);
                 }
             });
 
@@ -273,7 +255,7 @@ public class Data_Controller {
 
             i++;
         }
-        */
+
     }
 
 
