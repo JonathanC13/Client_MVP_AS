@@ -190,10 +190,12 @@ public class Data_Controller {
 
         placed_doors = new ArrayList<button_struct>();
 
-        // refresh doors test
+        // refresh doors test, the process for refreshing on floor change if needed
+        /*
         DB_Controller refDB = new DB_Controller();
         refDB.refreshDoors();
         refDB.setDoors(flr_dr_class_list.get(floor_sel), flr_dr_class_list.get(floor_sel).st_floor.getDoorID());
+        */
 
         int door_size = (int) (50 * scale);
 
