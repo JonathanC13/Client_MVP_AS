@@ -6,5 +6,5 @@
 
 Android App ![alt text][andLogo] <--> WAMPServer ![alt text][WAMPLogo] <--> MySQL ![alt text][SQLLogo] <br />
 --------------------------&nbsp;+- PHP scripts <br />
---------------------------&nbsp;`- Images
+--------------------------&nbsp;+- Images
                   
