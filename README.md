@@ -1,5 +1,5 @@
 # Client_MVP_AS
 
-Android App <--> WAMPServer <--> MySQL
+Android App <--> WAMPServer <--> MySQL <br />
                   +- PHP scripts
                   `- Images
