@@ -2,4 +2,4 @@
 
 Android App <--> WAMPServer <--> MySQL
                   +- PHP scripts
-                  +- Images
+                  `- Images
