@@ -246,7 +246,8 @@ public class Data_Controller {
             // generic button click
             btn_new.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-                    btn_new.setImageResource(R.drawable.open_door);
+
+                    generic_button_click(btn_new);
                 }
             });
 
@@ -261,7 +262,7 @@ public class Data_Controller {
     }
 
 
-    private void generic_button_click(View v)
+    private void generic_button_click(View v )
     {
         ImageButton IB = (ImageButton)v;
         String button_IP = "";
@@ -270,41 +271,29 @@ public class Data_Controller {
         for (button_struct btn : placed_doors)
         {
 
-            if (IB.getId() == btn.getID())
-            {
+            if (IB.getId() == btn.getID()) {
 
                 button_IP = btn.getIP();
                 break;
             }
         }
 
-        // udp send to open door
-        //send_udp_msg("222.33");
+        Log.v("TASK: ", button_IP);
+
+        // udp send to open door and wait for receive message
+        UDP_controller udpTask = new UDP_controller(button_IP);
+        int response = udpTask.executeUDP(); // Starts async task for udp operation
 
         // if ack receive that door is opened, change color of door to green for "opened" time
-        btn_colour_change(IB, 1);
-
-        // if ack receive for closed, change to red
-        btn_colour_change(IB, 0);
-    }
-
-    // Change colour of the button to green to indicate door has been opened, wait a time, and then change back to red
-    private void btn_colour_change(ImageButton btn_door, int o_flag)
-    {
-        if(o_flag == 1) {
-            btn_door.setBackgroundColor(Color.GREEN);
-
-            Drawable open_dr_draw = Drawable.createFromPath(open_door_path);
-
-            btn_door.setBackgroundDrawable(open_dr_draw);
-        } else {
-            btn_door.setBackgroundColor(Color.RED);
-
-            Drawable locked_dr_draw = Drawable.createFromPath(locked_door_image);
-
-            btn_door.setBackgroundDrawable(locked_dr_draw);
+        if(response == 1){
+            IB.setImageResource(R.drawable.open_door);
         }
+
+        // Depending on how we lock the door change this.
+        // if ack receive for closed, change to red
+
     }
+
 
     public String getFullImgPath(){
         return full_img_path;
