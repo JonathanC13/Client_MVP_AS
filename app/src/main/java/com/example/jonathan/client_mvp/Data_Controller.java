@@ -290,7 +290,12 @@ public class Data_Controller {
         }
 
         // Depending on how we lock the door change this.
-        // if ack receive for closed, change to red
+        try {
+            wait(5000); // Assumed door is open for 5 seconds
+        } catch (InterruptedException e){}
+
+        // change door to closed icon
+        IB.setImageResource(R.drawable.closed_door);
 
     }
 

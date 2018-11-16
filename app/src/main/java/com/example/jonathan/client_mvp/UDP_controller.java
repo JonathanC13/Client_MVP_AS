@@ -52,6 +52,7 @@ public class UDP_controller {
 
         // limit on bytes to receive
         private byte[] recBuff = new byte[??];
+        private byte[] dataBuff;
 
         public void ReqPi() {
         }
@@ -62,6 +63,9 @@ public class UDP_controller {
                 // Connect to a socket, Given a 'free port' as the local TID (transfer ID)
                 transferSocket = new DatagramSocket();
 
+                // fill message
+                sendBuff = ??;
+
                 // create datagram to send
                 DatagramPacket packet = new DatagramPacket(sendBuff, sendBuff.length, remoteAddress, remotePort);
                 transferSocket.send(packet); // send datagram
@@ -70,11 +74,13 @@ public class UDP_controller {
                 DatagramPacket reqPacket = new DatagramPacket(recBuff, recBuff.length);
                 transferSocket.setSoTimeout(5000); // Timeout of 5 seconds
                 transferSocket.receive(reqPacket); // Blocks here to wait for response from Pi.
+                // get data from received packet
+                dataBuff = reqPacket.getData();
 
                 // Do checking if the packet is of expected form and then check its contents
                 // First maybe check size
                     // check contents, if all correct, success = 1. Which means the Pi has unlocked the door
-                success = 1;
+                        success = 1;
 
 
             } catch (SocketException e){
