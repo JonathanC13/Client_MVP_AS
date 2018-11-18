@@ -29,7 +29,7 @@ public class UDP_controller {
 
         }
     }
-
+/*
     public int executeUDP(){
         try {
             Object obj = new ReqPi().execute().get(); // this thread waits for response
@@ -41,6 +41,10 @@ public class UDP_controller {
     }
 
     private class ReqPi extends AsyncTask<Void, Void, Void> {
+
+        // REEEEEEEEE
+        Request rq;
+        rq.send_request;
 
         // transfer socket
         private DatagramSocket transferSocket;
@@ -104,5 +108,5 @@ public class UDP_controller {
     public void close(){
         socket.close();
     }
-
+*/
 }

@@ -40,8 +40,8 @@ public class Data_Controller {
     private String closed_door;
     private String open_door;
 
-    private String locked_door_image;
-    private String open_door_path;
+    //private String locked_door_image;
+    //private String open_door_path;
     // </File system info>
 
     private float scale;
@@ -66,11 +66,11 @@ public class Data_Controller {
         image_folder = "/images/";
         full_img_path = appDIR;
 
-        closed_door = "/closed_door.png";
-        open_door = "/open_door.png";
+        //closed_door = "/closed_door.png";
+        //open_door = "/open_door.png";
 
-        locked_door_image = full_img_path + closed_door;
-        open_door_path = full_img_path + open_door;
+        //locked_door_image = full_img_path + closed_door;
+        //open_door_path = full_img_path + open_door;
 
     }
 
@@ -247,7 +247,7 @@ public class Data_Controller {
             btn_new.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
 
-                    generic_button_click(btn_new);
+                    //generic_button_click(btn_new);
                 }
             });
 
@@ -261,7 +261,7 @@ public class Data_Controller {
 
     }
 
-
+/*
     private void generic_button_click(View v )
     {
         ImageButton IB = (ImageButton)v;
@@ -298,7 +298,7 @@ public class Data_Controller {
         IB.setImageResource(R.drawable.closed_door);
 
     }
-
+*/
 
     public String getFullImgPath(){
         return full_img_path;

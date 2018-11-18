@@ -3,15 +3,45 @@
     <string name="s_btn_lvlUp">Level Up</string>
     <string name="s_btn_lvlDn">Level Down</string>
 
-    <!-- DB strings -->
-    <string name="DB_server">local</string>
-    <string name="DB_port">3306</string>
-    <string name="DB_name">floor_collection</string>
-    <string name="DB_user">root</string>
-    <string name="DB_pass">Pa55w0rd?</string>
+    <!-- url strings -->
+    <string name="http">http://</string>
+    <string name="serverIP">10.0.2.2</string>
+    <string name="serverPort">:8080</string>
+    <string name="phpFolder">/android_connect/</string>
+    <string name="imgFolder">/door_app_images/</string>
 
-    <string name="Floor_table">floor_collection_0</string>
-    <string name="Door_table">door_collection_0</string>
-    <string name="Image_table">Images_door</string>
-    <!-- -->
+    <!-- url php scripts -->
+    <string name="icon_scr">db_get_icons.php</string>
+    <string name="floor_scr">get_all_floors.php</string>
+    <string name="door_scr">get_all_doors.php</string>
+    <!-- /url strings -->
+
+    <!-- JSON node names -->
+    <string name="j_success">success</string>
+    <!-- image columns -->
+    <string name="j_imgIcons">door_icons</string>
+    <string name="j_imgPID">idimg</string>
+    <string name="j_imgNm">nm_img</string>
+    <string name="j_imgPath">path_img</string>
+    <!-- /image columns -->
+    <!-- floor columns -->
+    <string name="j_arrFloor">arr_floor_rows</string>
+    <string name="j_flrPID">idfloor</string>
+    <string name="j_flrNm">nm_floor</string>
+    <string name="j_flrOR">or_floor</string>
+    <string name="j_flrPath">img_path</string>
+    <string name="j_flrDr">iddoor</string>
+    <!-- /floor columns -->
+    <!-- door columns -->
+    <string name="j_arrDr">arr_doors</string>
+    <string name="j_drPID">iddr</string>
+    <string name="j_drNm">nm_door</string>
+    <string name="j_drID">iddoor</string>
+    <string name="j_drML">MarginLeft</string>
+    <string name="j_drMT">MarginTop</string>
+    <string name="j_drMR">MarginRight</string>
+    <string name="j_drMB">MarginBot</string>
+    <string name="j_drIP">IP_door</string>
+    <!-- /door columns -->
+    <!-- /JSON node names -->
 </resources>

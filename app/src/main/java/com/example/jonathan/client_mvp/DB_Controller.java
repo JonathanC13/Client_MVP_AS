@@ -49,13 +49,44 @@ public class DB_Controller {
 
     // url to get all products list
     // 10.0.2.2 for localhost, since using "localhost" is refused and Android emulator is running on a virtual machine
-    private static String url_all_icons = "http://10.0.2.2:8080/android_connect/db_get_icons.php";
-    private static String url_all_floors = "http://10.0.2.2:8080/android_connect/get_all_floors.php";
-    private static String url_all_doors = "http://10.0.2.2:8080/android_connect/get_all_doors.php";
+    private static String url_all_icons;
+    private static String url_all_floors; //= "http://10.0.2.2:8080/android_connect/get_all_floors.php"
+    private static String url_all_doors;
 
-    private static String url_server_img = "http://10.0.2.2:8080/door_app_images/";
+    private static String url_server_img;
 
     // <JSON Node names>
+    private static String TAG_SUCCESS;
+    // <image columns>
+    private static String TAG_IMAGES;
+    private static String TAG_IMG_PID;
+    private static String TAG_IMG_NM;
+    private static String TAG_IMG_PATH;
+    // </image columns>
+    // <floor columns>
+    private static String TAG_FLOORS;
+    private static String TAG_PID;
+    private static String TAG_NAME;
+    private static String TAG_ORDER;
+    private static String TAG_IMAGE;
+    private static String TAG_DOORID;
+    // </floor columns>
+    // <door columns>
+    private static String TAG_DOORS;
+    private static String TAG_DR_PID;
+    private static String TAG_DR_NM;
+    private static String TAG_DR_ID; // match with TAG_DOORID
+    private static String TAG_DR_ML;
+    private static String TAG_DR_MT;
+    private static String TAG_DR_MR;
+    private static String TAG_DR_MB;
+    private static String TAG_DR_IP;
+
+    // </door columns>
+    // </JSON Node names>
+
+    // <JSON Node names>
+    /*
     private static final String TAG_SUCCESS = "success";
     // <image columns>
     private static final String TAG_IMAGES = "door_icons";
@@ -81,8 +112,11 @@ public class DB_Controller {
     private static final String TAG_DR_MR = "MarginRight";
     private static final String TAG_DR_MB = "MarginBot";
     private static final String TAG_DR_IP = "IP_door";
+    */
     // </door columns>
     // </JSON Node names>
+
+
 
     String save_folder;
 
@@ -97,6 +131,57 @@ public class DB_Controller {
     public DB_Controller(Context ct, Data_Controller Data_c) {
         Data_shr = Data_c;
         save_folder = Data_c.getFullImgPath() + "/images/";
+
+        // <get url strings>
+        String s_http = ct.getResources().getString(R.string.http);
+        String s_serverIP = ct.getResources().getString(R.string.serverIP);
+        String s_serverPort = ct.getResources().getString(R.string.serverPort);
+        String s_phpFolder = ct.getResources().getString(R.string.phpFolder);
+        String s_imgFolder = ct.getResources().getString(R.string.imgFolder);
+
+        String s_serverDir = s_http + s_serverIP + s_serverPort;
+        String s_scriptDir = s_serverDir + s_phpFolder;
+        String s_imgDir = s_serverDir + s_imgFolder;
+
+        String s_iconPHP = ct.getResources().getString(R.string.icon_scr);
+        String s_floorPHP = ct.getResources().getString(R.string.floor_scr);
+        String s_doorPHP = ct.getResources().getString(R.string.door_scr);
+
+        url_all_icons = s_scriptDir + s_iconPHP;
+        url_all_floors = s_scriptDir + s_floorPHP;
+        url_all_doors = s_scriptDir + s_doorPHP;
+
+        url_server_img = s_imgDir;
+        // </get url strings>
+
+        // <JSON Node names>
+        TAG_SUCCESS = ct.getResources().getString(R.string.j_success);
+        // <image columns>
+        TAG_IMAGES = ct.getResources().getString(R.string.j_imgIcons);
+        TAG_IMG_PID = ct.getResources().getString(R.string.j_imgPID);
+        TAG_IMG_NM = ct.getResources().getString(R.string.j_imgNm);
+        TAG_IMG_PATH = ct.getResources().getString(R.string.j_imgPath);
+        // </image columns>
+        // <floor columns>
+        TAG_FLOORS = ct.getResources().getString(R.string.j_arrFloor);
+        TAG_PID = ct.getResources().getString(R.string.j_flrPID);
+        TAG_NAME = ct.getResources().getString(R.string.j_flrNm);
+        TAG_ORDER = ct.getResources().getString(R.string.j_flrOR);
+        TAG_IMAGE = ct.getResources().getString(R.string.j_flrPath);
+        TAG_DOORID = ct.getResources().getString(R.string.j_flrDr);
+        // </floor columns>
+        // <door columns>
+        TAG_DOORS = ct.getResources().getString(R.string.j_arrDr);
+        TAG_DR_PID = ct.getResources().getString(R.string.j_drPID);
+        TAG_DR_NM = ct.getResources().getString(R.string.j_drNm);
+        TAG_DR_ID = ct.getResources().getString(R.string.j_drID); // match with TAG_DOORID
+        TAG_DR_ML = ct.getResources().getString(R.string.j_drML);
+        TAG_DR_MT = ct.getResources().getString(R.string.j_drMT);
+        TAG_DR_MR = ct.getResources().getString(R.string.j_drMR);
+        TAG_DR_MB = ct.getResources().getString(R.string.j_drMB);
+        TAG_DR_IP = ct.getResources().getString(R.string.j_drIP);
+        // </door columns>
+        // </JSON Node names>
 
         // initialize by getting the door icons, right not they are just in drawable folder of app
         /*
