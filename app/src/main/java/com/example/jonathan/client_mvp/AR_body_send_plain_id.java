@@ -38,8 +38,7 @@ public class AR_body_send_plain_id {
     }
 
     public void setDevice_name(char[] device_name, int SIM_DEV_NAME_SIZE) {
-        this.device_name = Arrays.copyOf(device_name, SIM_DEV_NAME_SIZE);
-
+        System.arraycopy(device_name, 0, this.device_name, 0, SIM_DEV_NAME_SIZE);
     }
 
     public char[] getDevice_name() {

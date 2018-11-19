@@ -29,6 +29,32 @@ public class UDP_controller {
 
         }
     }
+
+    public int executeUDP(){
+        try {
+            Object obj = new ReqPi().execute().get(); // this thread waits for response
+        } catch (Exception e){
+
+        }
+        // then returns response
+        return success;
+    }
+
+    private class ReqPi extends AsyncTask<Void, Void, Void> {
+
+        public void ReqPi() {
+        }
+
+        protected Void doInBackground(Void... args) {
+
+            AccessRequest AR = new AccessRequest();
+            AR.send_request();
+            return null;
+        }
+        protected void onPostExecute(String file_url) {
+
+        }
+    }
 /*
     public int executeUDP(){
         try {
