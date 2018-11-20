@@ -37,6 +37,11 @@ public class AR_body_send_plain_id {
         return random_num;
     }
 
+    public int getRandom_numSize(){return Integer.BYTES;}
+    public int getDevice_nameSize(){return device_name.length * Character.BYTES;}
+    public int getDataStraightSize(){return data_straight_text.length * Character.BYTES;}
+    public int getDataComplSize(){return data_complement_text.length * Character.BYTES;}
+
     public void setDevice_name(char[] device_name, int SIM_DEV_NAME_SIZE) {
         System.arraycopy(device_name, 0, this.device_name, 0, SIM_DEV_NAME_SIZE);
     }

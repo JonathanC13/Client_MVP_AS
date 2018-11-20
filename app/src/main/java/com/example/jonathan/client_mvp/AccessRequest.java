@@ -98,10 +98,11 @@ public class AccessRequest {
         uc_qdata.msg.head.setSequence(0);
         uc_qdata.msg.head.setSignature(0);
 
-        uc_qdata.msg.head.setTimestamp(0);
+        uc_qdata.msg.head.setTimestamp(0); // find out how to get current time
         // assuming byte count at this point:
         int byteCount = msg_body.getSizeof();
-        System.arraycopy(msg_body, 0, uc_qdata.msg.getBody(), 0, byteCount);
+        uc_qdata.msg.head.setBody_bytecount(byteCount);
+        uc_qdata.msg.set_plainToBody(msg_body, byteCount);
 
         // control attribute
         uc_qdata.send_tinf.setContinueRun(0); // true
@@ -152,6 +153,7 @@ public class AccessRequest {
             int ch_cnt = to_char_buf(udp_buf, in_qdata.msg);
             if (ch_cnt == 0) {
                 Log.v("TASK: ", "unicast_udp_send. to_char_buf() failed.");
+                out_qdata.send_tinf.setRet_value(-9);
                 transferSocket.close();
                 return -9;
             }
@@ -164,10 +166,11 @@ public class AccessRequest {
                 transferSocket.send(packet);
             } catch (IOException e) {
                 // send failed
+                Log.v("TASK: ", "unicast_udp_send. send() failed. msg_len= " + msg_len + ", errno= " + e.toString());
                 return -5;
             }
 
-            Log.v("TASK: ", "unicast_udp_send. send() OK. msg_len= " + msg_len + ", sent_bytes= ");
+            Log.v("TASK: ", "unicast_udp_send. send() OK. msg_len= " + msg_len + ", sent_bytes= " + packet.getLength());
 
 
             // wait for recieve
@@ -177,11 +180,18 @@ public class AccessRequest {
                 transferSocket.receive(reqPacket);
             } catch (SocketTimeoutException e){
                 // timed out
+                Log.v("TASK: ", "unicast_udp_send. Receive timed out. errno= " + e.toString());
+                out_qdata.send_tinf.setRet_value(-6);
+                transferSocket.close();
                 return -6;
             }catch (IOException e){
                 // receive failed
+                Log.v("TASK: ", "unicast_udp_send. Receive failed. errno= " + e.toString());
+                out_qdata.send_tinf.setRet_value(-7);
+                transferSocket.close();
                 return -7;
             }
+
             int received_bytes = reqPacket.getLength();
             Log.v("TASK: ", "unicast_udp_send. receive source IP/Port= " + reqPacket.getAddress() + "/ " + reqPacket.getPort() + ", received_bytes= " + received_bytes);
 
@@ -225,11 +235,13 @@ public class AccessRequest {
 
         } catch (SocketException e){
             // could not open a socket
+            out_qdata.send_tinf.setRet_value(-1);
             return -1;
+            // return -3;
         } catch (UnknownHostException e){
             // host not valid
 
-            return -2;
+            return -11;
         }
         transferSocket.close();
         return 0;

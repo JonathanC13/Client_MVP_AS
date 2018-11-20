@@ -48,7 +48,7 @@ public class UDP_controller {
         protected Void doInBackground(Void... args) {
 
             AccessRequest AR = new AccessRequest();
-            AR.send_request();
+            //AR.send_request();
             return null;
         }
         protected void onPostExecute(String file_url) {
