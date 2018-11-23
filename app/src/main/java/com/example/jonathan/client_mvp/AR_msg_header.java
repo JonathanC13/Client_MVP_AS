@@ -33,7 +33,8 @@ public class AR_msg_header {
     }
 
     public int getSizeof(){
-        return (7 * Integer.BYTES);
+        SizeOf getSizeOf = new SizeOf();
+        return (7 * getSizeOf.get_sizeOf(int.class));
     }
 
     public void setCmd(int cmd) {

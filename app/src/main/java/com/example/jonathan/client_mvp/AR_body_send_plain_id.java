@@ -9,7 +9,10 @@ public class AR_body_send_plain_id {
     private char[] data_straight_text;
     private char[] data_complement_text;
 
+    SizeOf getSize;
+
     public AR_body_send_plain_id(int SIM_DEV_NAME_SIZE, int SIM_ID_BYTE_SIZE){
+        SizeOf getSize = new SizeOf();
         this.device_name = new char[SIM_DEV_NAME_SIZE];
         this.data_straight_text = new char[SIM_ID_BYTE_SIZE];
         this.data_complement_text = new char[SIM_ID_BYTE_SIZE];
@@ -37,10 +40,22 @@ public class AR_body_send_plain_id {
         return random_num;
     }
 
-    public int getRandom_numSize(){return Integer.BYTES;}
-    public int getDevice_nameSize(){return device_name.length * Character.BYTES;}
-    public int getDataStraightSize(){return data_straight_text.length * Character.BYTES;}
-    public int getDataComplSize(){return data_complement_text.length * Character.BYTES;}
+    public int getRandom_numSize(){
+        //return Integer.BYTES; // need API 24 +
+        return getSize.get_sizeOf(int.class);
+    }
+    public int getDevice_nameSize(){
+        //return device_name.length * Character.BYTES;
+        return (device_name.length * getSize.get_sizeOf(char.class));
+    }
+    public int getDataStraightSize(){
+        //return data_straight_text.length * Character.BYTES;
+        return (data_straight_text.length * getSize.get_sizeOf(char.class));
+    }
+    public int getDataComplSize(){
+        //return data_complement_text.length * Character.BYTES;
+        return (data_complement_text.length * getSize.get_sizeOf(char.class));
+    }
 
     public void setDevice_name(char[] device_name, int SIM_DEV_NAME_SIZE) {
         System.arraycopy(device_name, 0, this.device_name, 0, SIM_DEV_NAME_SIZE);
