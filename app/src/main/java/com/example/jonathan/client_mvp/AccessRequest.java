@@ -67,6 +67,15 @@ public class AccessRequest {
         // all
 
     public int send_request(char[] p_IPv4, char[] p_port, char[] p_device_name, char[] p_card_id){
+
+        Log.v("TASK: ", "send_request: Starting ===");
+        Log.v("TASK: ", "send_request: <parameters> ---");
+        Log.v("TASK: ", "send_request: p_IPv4: " + p_IPv4);
+        Log.v("TASK: ", "send_request: p_port: " + p_port);
+        Log.v("TASK: ", "send_request: p_device_name: " + p_device_name);
+        Log.v("TASK: ", "send_request: p_card_id: " + p_card_id);
+        Log.v("TASK: ", "send_request: </parameters> ---");
+
         AR_csys_unicast_qdata uc_qdata = new AR_csys_unicast_qdata(MAX_MSG_BODY_SIZE, IPV4_LEN);
         AR_csys_unicast_qdata ret_qdata = new AR_csys_unicast_qdata(MAX_MSG_BODY_SIZE, IPV4_LEN);
 
@@ -89,6 +98,11 @@ public class AccessRequest {
             }
         }
 
+        Log.v("TASK: ", "send_request: <copy> ---");
+        Log.v("TASK: ", "send_request: p_dst_straight: " + p_dst_straight);
+        Log.v("TASK: ", "send_request: p_dst_compl: " + p_dst_compl);
+        Log.v("TASK: ", "send_request: </copy> ---");
+
         uc_qdata.zeroAll();
         ret_qdata.zeroAll();
 
@@ -104,6 +118,12 @@ public class AccessRequest {
         uc_qdata.msg.head.setBody_bytecount(byteCount);
         uc_qdata.msg.set_plainToBody(msg_body, byteCount);
 
+        Log.v("TASK: ", "send_request: <uc_qdata> ---");
+        Log.v("TASK: ", "send_request: msg_body size: " + byteCount);
+        String s_body = new String(uc_qdata.msg.getBody());
+        Log.v("TASK: ", "send_request: cys_msg body: " + s_body);
+
+
         // control attribute
         uc_qdata.send_tinf.setContinueRun(0); // true
         char[] acrq = new char[] {'a', 'c', 'r', 'q'};
@@ -116,6 +136,11 @@ public class AccessRequest {
         uc_qdata.svr_net_info.setServer_ipv4(p_IPv4, IPV4_LEN + 1);
         String s_port = new String(p_port);
         uc_qdata.svr_net_info.setServer_port(Integer.parseInt(s_port));
+
+        String s_server = new String(uc_qdata.svr_net_info.getServer_ipv4());
+        Log.v("TASK: ", "send_request: svr_net_info server: " + s_server);
+        Log.v("TASK: ", "send_request: svr_net_info port: " + uc_qdata.svr_net_info.getServer_port());
+        Log.v("TASK: ", "send_request: </uc_qdata> ---");
 
         return unicast_udp_send(uc_qdata, ret_qdata, 10);
 
@@ -141,11 +166,11 @@ public class AccessRequest {
             String s_remoteIP = new String(remoteIP);
             remoteaddr = InetAddress.getByName(s_remoteIP);
 
-            // size of msg_header
-            int msg_headerSize = 7 * (Integer.BYTES);
-
             // length of data to send
             int msg_len = out_qdata.msg.head.getSizeof() + in_qdata.msg.head.getBody_bytecount();
+
+            Log.v("TASK: ", "unicast_udp_send: <out_qdata> ---" );
+            Log.v("TASK: ", "unicast_udp_send: msg_len: " + msg_len);
 
             // omits padding in the structure
             //bzero(udp_buf, sizeof(udp_buf));
@@ -157,6 +182,8 @@ public class AccessRequest {
                 transferSocket.close();
                 return -9;
             }
+
+            Log.v("TASK: ", "unicast_udp_send: </out_qdata> ---" );
 
             // debug dump
 
@@ -206,7 +233,7 @@ public class AccessRequest {
                     char[] p = out_qdata.msg.getBody();
                     p[out_qdata.msg.head.getBody_bytecount()] = 0; // terminate the message body with NULL in case it is used in string manipulation
 
-                    Log.v("TASK: ", "unicast_udp_send. Receive OK. cmd= " + out_qdata.msg.head.getCmd() + ", bytes= " + received_bytes);
+                    Log.v("TASK: ", "unicast_udp_send. Receive OK. out_qdata msg head cmd= " + out_qdata.msg.head.getCmd() + ", bytes= " + received_bytes);
 
                     switch(out_qdata.msg.head.getCmd()) // based on the message command, create a return message and send it
                     {
@@ -249,6 +276,8 @@ public class AccessRequest {
 
     public int to_char_buf(byte[] qu_msg, AR_csys_msg udp_msg){
 
+        Log.v("TASK: ", "<to_char_buf> --- ");
+
         StringBuilder buffer = new StringBuilder();
         for(int i = 0; i < qu_msg.length;i++){
             buffer.append(qu_msg[i]);
@@ -267,18 +296,31 @@ public class AccessRequest {
         if(udp_msg.head.getBody_bytecount() < MAX_MSG_BODY_SIZE){
             System.arraycopy(udp_msg.head.getBody_bytecount(),0, ch, IDX_BCNT, 4);
             System.arraycopy(udp_msg.getBody(), 0, ch, IDX_BODY, udp_msg.head.getBody_bytecount());
+
+            String s_ch = new String(ch);
+            Log.v("TASK: ", "to_char_buf: qu_msg: <MAX_MSG_BODY_SIZE. " + s_ch);
+            Log.v("TASK: ", "to_char_buf: qu_msg: return. " + (MSG_HEADER_SIZE + udp_msg.head.getBody_bytecount()));
+
+            Log.v("TASK: ", "</to_char_buf> --- ");
             qu_msg = new String(ch).getBytes();
             return (MSG_HEADER_SIZE + udp_msg.head.getBody_bytecount());
 
         } else {
             ch[IDX_BCNT] = MAX_MSG_BODY_SIZE;
             System.arraycopy(udp_msg.getBody(), 0, ch, IDX_BODY, MAX_MSG_BODY_SIZE);
+
+            String s_ch = new String(ch);
+            Log.v("TASK: ", "to_char_buf: qu_msg: else. " + s_ch);
+            Log.v("TASK: ", "</to_char_buf> --- ");
+
             qu_msg = new String(ch).getBytes();
             return 0;
         }
     }
 
     public int to_csys_msg(AR_csys_msg udp_msg, byte[] qu_msg){
+
+        Log.v("TASK: ", "<to_csys_msg> ---" );
 
         StringBuilder buffer = new StringBuilder();
         for(int i = 0; i < qu_msg.length;i++){
@@ -298,11 +340,20 @@ public class AccessRequest {
         if(udp_msg.head.getBody_bytecount() < MAX_MSG_BODY_SIZE){
             udp_msg.setBody(ch, IDX_BODY, 0, udp_msg.head.getBody_bytecount());
             udp_msg.setIndBody(udp_msg.head.getBody_bytecount(), '\0');
+
+            String s_body = new String(udp_msg.getBody());
+            Log.v("TASK: ", "to_csys_msg: udp_msg body: <MAX_MSG_BODY_SIZE. " + s_body);
+            Log.v("TASK: ", "to_csys_msg: return size: " + MSG_HEADER_SIZE + udp_msg.head.getBody_bytecount());
+
             //qu_msg = new String(ch).getBytes();
             return (MSG_HEADER_SIZE + udp_msg.head.getBody_bytecount());
         } else {
             udp_msg.head.setBody_bytecount(MAX_MSG_BODY_SIZE);
             udp_msg.setBody(ch, IDX_BODY, 0, MAX_MSG_BODY_SIZE);
+
+            String s_body = new String(udp_msg.getBody());
+            Log.v("TASK: ", "to_csys_msg: udp_msg body: else. " + s_body);
+
             //qu_msg = new String(ch).getBytes();
             return 0;
         }
