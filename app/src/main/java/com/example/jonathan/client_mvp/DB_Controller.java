@@ -50,7 +50,7 @@ public class DB_Controller {
     // Creating JSON Parser object
     JSONParser jParserFlr;
     JSONParser jParserDr;
-    JSONParser jPareserImg;
+    JSONParser jParserImg;
 
     // Store parsed JSON to lists
     ArrayList<String> iconList = new ArrayList<String>();
@@ -563,14 +563,14 @@ public class DB_Controller {
                     //HttpPost httppost = new HttpPost(s_url); // "&string2=" + string2
                     //HttpResponse response = httpclient.execute(httppost);
 
-                    jParseImg = new JSONParser();
+                    jParserImg = new JSONParser();
                     // Building Parameters
                     List<NameValuePair> params = new ArrayList<NameValuePair>();
                     params.add(new BasicNameValuePair("folder", save_folder));
                     // getting JSON string from URL
 
                     //JSONObject json = null;
-                    JSONObject json = jParseImg.makeHttpRequest(url_all_images, "POST", params);
+                    JSONObject json = jParserImg.makeHttpRequest(url_all_images, "POST", params);
                     
                     // check all child files
 
