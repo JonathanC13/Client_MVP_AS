@@ -14,6 +14,7 @@
     <string name="icon_scr">db_get_icons.php</string>
     <string name="floor_scr">get_all_floors.php</string>
     <string name="door_scr">get_all_doors.php</string>
+    <string name="image_scr">db_getImages.php</string>
     <!-- /url strings -->
 
     <!-- JSON node names -->
