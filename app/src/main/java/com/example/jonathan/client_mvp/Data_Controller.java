@@ -73,6 +73,10 @@ public class Data_Controller {
         //open_door_path = full_img_path + open_door;
 
     }
+    
+    public void resetFloorList(){
+        flr_dr_class_list = new ArrayList<Data_Collection>();
+    }
 
     // Fill spinner, done in main activity, need context
     public void set_combobox_items(Context main, Spinner cmbo, ImageView imgV, Button dnBtn){
