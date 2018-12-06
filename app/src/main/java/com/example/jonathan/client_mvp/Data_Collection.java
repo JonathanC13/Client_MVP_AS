@@ -14,6 +14,10 @@ public class Data_Collection {
     {
         arr_doors = new ArrayList<door_struct>();
     }
+    
+    public void newDoorList(){
+        arr_doors = new ArrayList<door_struct>();   
+    }
 
     // Initialize floor struct
     public void set_floor(String floor_name, String floor_number, String display_name, String img_dir, String doorID){
