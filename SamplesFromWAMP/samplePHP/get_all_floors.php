@@ -69,6 +69,7 @@ if ($result = $mysqli->query($query)) {
     echo json_encode($response);
 }
 
+close($mysqli);
 /*
 // check for empty result
 if (mysql_num_rows($result) > 0) {

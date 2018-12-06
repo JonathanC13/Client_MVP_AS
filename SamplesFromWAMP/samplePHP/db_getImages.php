@@ -57,6 +57,7 @@ $img_folder = '/data/user/0/com.example.jonathan.client_mvp/files/images/';
     }
   }
 
+  close($mysqli);
   // </floor collection images>
 
 ?>
