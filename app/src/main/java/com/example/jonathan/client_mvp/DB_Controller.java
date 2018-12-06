@@ -44,8 +44,8 @@ public class DB_Controller {
 
     // Store parsed JSON to lists
     ArrayList<String> iconList = new ArrayList<String>();
-    ArrayList<HashMap<String, String>> floorList = new ArrayList<HashMap<String, String>>(); // needed since we sort the floors
-    ArrayList<HashMap<String, String>> doorList = new ArrayList<HashMap<String, String>>(); // hold all the existing doors
+    ArrayList<HashMap<String, String>> floorList; // needed since we sort the floors
+    ArrayList<HashMap<String, String>> doorList; // hold all the existing doors
 
     // url to get all products list
     // 10.0.2.2 for localhost, since using "localhost" is refused and Android emulator is running on a virtual machine
@@ -305,7 +305,8 @@ public class DB_Controller {
     }
 
     public void setDoors(Data_Collection new_flr ,String doorID){
-        new_flr.arr_doors = new ArrayList<door_struct>();
+        //new_flr.arr_doors = new ArrayList<door_struct>();
+        new_flr.newDoorList();
 
         for(HashMap<String, String> dr : doorList){
             if(doorID.equals(dr.get(TAG_DR_ID))){
@@ -637,6 +638,9 @@ public class DB_Controller {
          * getting All products from url
          * */
         protected String doInBackground(String... args) {
+            
+            floorList = new ArrayList<HashMap<String, String>>();
+            
             jParserFlr = new JSONParser();
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
@@ -691,6 +695,9 @@ public class DB_Controller {
                 max_count ++;
             }
 
+            // Reset Data_shr floor list
+            Data_shr.resetFloorList();
+            
             //Log.v("TASK: ", String.valueOf(max_count));
 
             // Sort and Add
