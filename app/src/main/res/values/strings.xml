@@ -3,6 +3,12 @@
     <string name="s_btn_lvlUp">Level Up</string>
     <string name="s_btn_lvlDn">Level Down</string>
 
+    <!-- Log in screen -->
+    <string name="Welcome">Welcome!</string>
+    <string name="emaillabel">E-mail:</string>
+    <string name="passlabel">Password:</string>
+    <string name="sign_in">Sign in</string>
+
     <!-- url strings -->
     <string name="http">http://</string>
     <string name="serverIP">10.0.2.2</string>
@@ -15,6 +21,7 @@
     <string name="floor_scr">get_all_floors.php</string>
     <string name="door_scr">get_all_doors.php</string>
     <string name="image_scr">db_getImages.php</string>
+    <string name="validate_scr">validateLogin.php</string>
     <!-- /url strings -->
 
     <!-- JSON node names -->
@@ -43,6 +50,7 @@
     <string name="j_drMR">MarginRight</string>
     <string name="j_drMB">MarginBot</string>
     <string name="j_drIP">IP_door</string>
+    <string name="title_activity_log_in_one_time">LogIn_oneTIme</string>
     <!-- /door columns -->
     <!-- /JSON node names -->
 </resources>

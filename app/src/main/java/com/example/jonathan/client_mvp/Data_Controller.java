@@ -251,7 +251,7 @@ public class Data_Controller {
             btn_new.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
 
-                    //generic_button_click(btn_new);
+                    generic_button_click(btn_new);
                 }
             });
 
@@ -265,44 +265,44 @@ public class Data_Controller {
 
     }
 
-/*
+
     private void generic_button_click(View v )
     {
         ImageButton IB = (ImageButton)v;
         String button_IP = "";
 
         // search button_struct placed_doors() List for the door and get its IP
-        for (button_struct btn : placed_doors)
-        {
+        //for (button_struct btn : placed_doors)
+        //{
 
-            if (IB.getId() == btn.getID()) {
+          //  if (IB.getId() == btn.getID()) {
 
-                button_IP = btn.getIP();
-                break;
-            }
-        }
+            //    button_IP = btn.getIP();
+              //  break;
+            //}
+        //}
 
-        Log.v("TASK: ", button_IP);
+        //Log.v("TASK: ", button_IP);
 
         // udp send to open door and wait for receive message
-        UDP_controller udpTask = new UDP_controller(button_IP);
-        int response = udpTask.executeUDP(); // Starts async task for udp operation
+        //UDP_controller udpTask = new UDP_controller(button_IP);
+        //int response = udpTask.executeUDP(); // Starts async task for udp operation
 
         // if ack receive that door is opened, change color of door to green for "opened" time
-        if(response == 1){
+        //if(response == 1){
             IB.setImageResource(R.drawable.open_door);
-        }
+        //}
 
-        // Depending on how we lock the door change this.
-        try {
-            wait(5000); // Assumed door is open for 5 seconds
-        } catch (InterruptedException e){}
+        // Depending on how we lock the door change this. This wait causes an error, crashes the app.
+        //try {
+          //  wait(5000); // Assumed door is open for 5 seconds
+        //} catch (InterruptedException e){}
 
         // change door to closed icon
-        IB.setImageResource(R.drawable.closed_door);
+        //IB.setImageResource(R.drawable.closed_door);
 
     }
-*/
+
 
     public String getFullImgPath(){
         return full_img_path;
