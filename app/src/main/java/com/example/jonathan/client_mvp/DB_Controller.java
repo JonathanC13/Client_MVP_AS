@@ -50,6 +50,7 @@ public class DB_Controller {
     // Creating JSON Parser object
     JSONParser jParserFlr;
     JSONParser jParserDr;
+    JSONParser jPareserImg;
 
     // Store parsed JSON to lists
     ArrayList<String> iconList = new ArrayList<String>();
@@ -61,6 +62,7 @@ public class DB_Controller {
     private static String url_all_icons;
     private static String url_all_floors; //= "http://10.0.2.2:8080/android_connect/get_all_floors.php"
     private static String url_all_doors;
+    private static String url_all_images;
 
     private static String url_server_img;
 
@@ -129,10 +131,12 @@ public class DB_Controller {
         String s_iconPHP = ct.getResources().getString(R.string.icon_scr);
         String s_floorPHP = ct.getResources().getString(R.string.floor_scr);
         String s_doorPHP = ct.getResources().getString(R.string.door_scr);
+        String s_imagePHP = ct.getResources().getString(R.string.image_scr);
 
         url_all_icons = s_scriptDir + s_iconPHP;
         url_all_floors = s_scriptDir + s_floorPHP;
         url_all_doors = s_scriptDir + s_doorPHP;
+        url_all_images = s_scriptDir + s_imagePHP;
 
         url_server_img = s_imgDir;
         // </get url strings>
@@ -476,7 +480,7 @@ public class DB_Controller {
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
             // getting JSON string from URL
-            JSONObject json = jParserFlr.makeHttpRequest(url_all_icons, "GET", params);
+            JSONObject json = jParserFlr.makeHttpRequest(url_all_icons, "POST", params);
 
             try {
                 // Checking for SUCCESS TAG
@@ -553,12 +557,21 @@ public class DB_Controller {
                     //}
 
                     //String s_url = url_all_images + "?string1=" + save_folder;
-                    String s_url = "http://10.0.2.2:8080/android_connect/db_getImages.php?string1=" + save_folder;
+                    //String s_url = "http://10.0.2.2:8080/android_connect/db_getImages.php?string1=" + save_folder;
 
-                    HttpClient httpclient = new DefaultHttpClient();
-                    HttpPost httppost = new HttpPost(s_url); // "&string2=" + string2
-                    HttpResponse response = httpclient.execute(httppost);
+                    //HttpClient httpclient = new DefaultHttpClient();
+                    //HttpPost httppost = new HttpPost(s_url); // "&string2=" + string2
+                    //HttpResponse response = httpclient.execute(httppost);
 
+                    jParseImg = new JSONParser();
+                    // Building Parameters
+                    List<NameValuePair> params = new ArrayList<NameValuePair>();
+                    params.add(new BasicNameValuePair("folder", save_folder));
+                    // getting JSON string from URL
+
+                    //JSONObject json = null;
+                    JSONObject json = jParseImg.makeHttpRequest(url_all_images, "POST", params);
+                    
                     // check all child files
 
                     // check if a file was saved
@@ -616,7 +629,7 @@ public class DB_Controller {
             List<NameValuePair> params = new ArrayList<NameValuePair>();
             // getting JSON string from URL
 
-            JSONObject json = jParserDr.makeHttpRequest(url_all_doors, "GET", params);
+            JSONObject json = jParserDr.makeHttpRequest(url_all_doors, "POST", params);
 
             // <loop for redundancy>
             /*
@@ -746,7 +759,7 @@ public class DB_Controller {
             // getting JSON string from URL
 
             //JSONObject json = null;
-            JSONObject json = jParserFlr.makeHttpRequest(url_all_floors, "GET", params);
+            JSONObject json = jParserFlr.makeHttpRequest(url_all_floors, "POST", params);
 
             // </loop for redundancy>
             if(json != null) {
