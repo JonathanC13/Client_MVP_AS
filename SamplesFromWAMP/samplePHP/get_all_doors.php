@@ -51,4 +51,7 @@ if ($result = $mysqli->query($query)) {
     // echo no users JSON
     echo json_encode($response);
 }
+
+
+close($mysqli);
 ?>
