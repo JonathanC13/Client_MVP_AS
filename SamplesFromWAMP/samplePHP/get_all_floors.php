@@ -33,6 +33,7 @@ $query = "SELECT * FROM floor_collection_0";
 //
 
 // SELECT
+// True if != 0;
 if ($result = $mysqli->query($query)) {
 
     // an array for the floor_rows

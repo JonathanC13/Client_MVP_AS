@@ -93,10 +93,13 @@ public class LogIn_oneTIme extends AppCompatActivity {
                     txt_info.setText("NOTHING");
                 } else {
                     // if em_card is assigned a value, now check if the user has checked the box that indicates if they want to remain logged in.
-                    // 
+                    //
 
+
+                    Intent main_intent = new Intent(LogIn_oneTIme.this, MainActivity.class);
                     // Need to pass Card number to next activity, since it is used to open doors
-                    startActivity(new Intent(LogIn_oneTIme.this, MainActivity.class));
+                    main_intent.putExtra("CardID", em_card);
+                    startActivity(main_intent);
                     // Remove activity from back stack
                     finish();
                 }

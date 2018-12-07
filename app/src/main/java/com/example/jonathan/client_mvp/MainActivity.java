@@ -1,6 +1,7 @@
 package com.example.jonathan.client_mvp;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.support.constraint.ConstraintLayout;
@@ -32,10 +33,17 @@ public class MainActivity extends AppCompatActivity {
     private Data_Controller dataPull;
     private ConstraintLayout grd_scr;
 
+    private String cardID;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Passed card id
+        Intent main_intent = getIntent();
+        cardID = main_intent.getStringExtra("CardID");
+        Log.v("TASK: ", "MAIN: " + cardID);
 
         final float scale = getResources().getDisplayMetrics().density;
         final Spinner s_items = (Spinner) findViewById(R.id.spn_lvls);
