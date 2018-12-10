@@ -31,6 +31,10 @@
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" />
+        <activity
+            android:name=".FloorActivity"
+            android:label="@string/title_activity_floor"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

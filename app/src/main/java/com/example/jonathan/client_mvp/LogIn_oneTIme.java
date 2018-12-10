@@ -47,8 +47,8 @@ public class LogIn_oneTIme extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_in_one_time);
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        //setSupportActionBar(toolbar);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -94,7 +94,7 @@ public class LogIn_oneTIme extends AppCompatActivity {
                         editor.putString(getString(R.string.card), em_card);
                         editor.commit();
 
-                        Intent main_intent = new Intent(LogIn_oneTIme.this, MainActivity.class);
+                        Intent main_intent = new Intent(LogIn_oneTIme.this, FloorActivity.class);
                         // Need to pass Card number to next activity, since it is used to open doors
                         //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
                         startActivity(main_intent);
@@ -115,74 +115,77 @@ public class LogIn_oneTIme extends AppCompatActivity {
             autologged_flag = 1;
         }
 
-
+        // else it means that we need to do the login process
         if(autologged_flag == 1){
 
-            // else it means that we need to do the login process
-
-            // Log in information stored on company server or their preferred online service.
-            // For demonstration, we use mySQL workbench
-            et_user = (EditText) findViewById(R.id.et_user);
-            et_pass = (EditText) findViewById(R.id.et_pass);
-            // Switch for auto login feature
-            final Switch sw_autolog = (Switch) findViewById(R.id.sw_auto);
-
-            //txt_info.setText(url_validate);
-            // Sign in button
-            Button btn_signIn = (Button) findViewById(R.id.btn_signin);
-            btn_signIn.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-
-                    // Prevent SQL injection by having the php not execute a custom query. Just doing compares.
-                    in_username = et_user.getText().toString();
-                    in_password = et_pass.getText().toString();
-
-                    try {
-                        Object result = new validateLogin().execute().get();
-                        if(result != null || em_card != null){
-                            // pass
-                        } else {
-                            // error in script or card value was not set.
-                        }
-                    } catch (Exception e) {
-                        Log.v("TASK: ", "flr " + e.toString());
-                    }
-
-                    txt_info.setText(em_card);
-
-                    if (em_card == null) {
-                        txt_info.setText("NOTHING");
-                    } else {
-
-                        // Using saved preferences feature in android to have autologin and save the user's card information.
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        // if em_card is assigned a value, now check if the user has checked the box that indicates if they want to have auto log in for next time.
-                        if (sw_autolog.isChecked() == true) {
-                            // write user name and password to file
-                            editor.putString(getString(R.string.userlabel), in_username);
-                            editor.putString(getString(R.string.passlabel), in_password);
-                            // On logout, delete whole file or clear it. Done in main activity if user decides to log out.
-                        }
-                        // Now need to handle where to store card number, since only one user is on the shared preference at one time, can save all relevant information on it.
-                        // Save card number in the shared preferences too
-                        // Card as key and card number as value
-                        editor.putString(getString(R.string.card), em_card);
-                        editor.commit();
-
-                        Intent main_intent = new Intent(LogIn_oneTIme.this, MainActivity.class);
-                        // Need to pass Card number to next activity, since it is used to open doors
-                        //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
-                        startActivity(main_intent);
-                        // Remove activity from back stack
-                        finish();
-                    }
-                }
-            });
+            manualLogin();
         }
     }
 
-    int manualLogin(){
-        return 0;
+    void manualLogin(){
+
+        final SharedPreferences sharedPref = context.getSharedPreferences(
+                getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+
+        // Log in information stored on company server or their preferred online service.
+        // For demonstration, we use mySQL workbench
+        et_user = (EditText) findViewById(R.id.et_user);
+        et_pass = (EditText) findViewById(R.id.et_pass);
+        // Switch for auto login feature
+        final Switch sw_autolog = (Switch) findViewById(R.id.sw_auto);
+
+        //txt_info.setText(url_validate);
+        // Sign in button
+        Button btn_signIn = (Button) findViewById(R.id.btn_signin);
+        btn_signIn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+
+                // Prevent SQL injection by having the php not execute a custom query. Just doing compares.
+                in_username = et_user.getText().toString();
+                in_password = et_pass.getText().toString();
+
+                try {
+                    Object result = new validateLogin().execute().get();
+                    if(result != null || em_card != null){
+                        // pass
+                    } else {
+                        // error in script or card value was not set.
+                    }
+                } catch (Exception e) {
+                    Log.v("TASK: ", "flr " + e.toString());
+                }
+
+                txt_info.setText(em_card);
+
+                if (em_card == null) {
+                    txt_info.setText("NOTHING");
+                } else {
+
+                    // Using saved preferences feature in android to have autologin and save the user's card information.
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    // if em_card is assigned a value, now check if the user has checked the box that indicates if they want to have auto log in for next time.
+                    if (sw_autolog.isChecked() == true) {
+                        // write user name and password to file
+                        editor.putString(getString(R.string.userlabel), in_username);
+                        editor.putString(getString(R.string.passlabel), in_password);
+                        // On logout, delete whole file or clear it. Done in main activity if user decides to log out.
+                    }
+                    // Now need to handle where to store card number, since only one user is on the shared preference at one time, can save all relevant information on it.
+                    // Save card number in the shared preferences too
+                    // Card as key and card number as value
+                    editor.putString(getString(R.string.card), em_card);
+                    editor.commit();
+
+                    Intent main_intent = new Intent(LogIn_oneTIme.this, FloorActivity.class);
+                    // Need to pass Card number to next activity, since it is used to open doors
+                    //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
+                    startActivity(main_intent);
+                    // Remove activity from back stack
+                    finish();
+                }
+            }
+        });
+
     }
 
     /**
@@ -240,16 +243,19 @@ public class LogIn_oneTIme extends AppCompatActivity {
                     } else {
                         // no products found
                         //txt_info.setText("not found.");
+                        // em_card stays = null
 
                     }
                 } catch (JSONException e) {
                     //txt_info.setText("err1");
                     e.printStackTrace();
+                    return "error";
                 }
 
             } catch (Exception e){
                 //t1.setText(e.toString());
                 Log.v("TASK: ", e.toString());
+                return "error";
             }
 
             return null;

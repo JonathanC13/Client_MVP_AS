@@ -1,5 +1,11 @@
 package com.example.jonathan.client_mvp;
 
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,7 +29,7 @@ import android.widget.Spinner;
 
 import java.io.File;
 
-public class MainActivity extends AppCompatActivity {
+public class FloorActivity extends AppCompatActivity {
 
     private ImageView main_img;
     private Data_Controller dataPull;
@@ -31,17 +37,25 @@ public class MainActivity extends AppCompatActivity {
 
     private String cardID;
 
-    Context context = MainActivity.this;
+    Context context = FloorActivity.this;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_floor);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        // Passed card id
-        Intent main_intent = getIntent();
-        //cardID = main_intent.getStringExtra("CardID");
-        //Log.v("TASK: ", "MAIN: " + cardID);
+        /*
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+        */
 
         final float scale = getResources().getDisplayMetrics().density;
         final Spinner s_items = (Spinner) findViewById(R.id.spn_lvls);
@@ -131,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
         String save_img_folder = intStorageDirectory + "/images";
         File comon = new File(save_img_folder);
         //if(comon.exists()){
-          //  Log.v("TASK: ", "initial: " + save_img_folder);
+        //  Log.v("TASK: ", "initial: " + save_img_folder);
         //}
 
         // Object that controls the Data
@@ -244,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
             editor.commit();
 
             // Open new login activity
-            Intent main_intent = new Intent(MainActivity.this, LogIn_oneTIme.class);
+            Intent main_intent = new Intent(FloorActivity.this, LogIn_oneTIme.class);
             // Need to pass Card number to next activity, since it is used to open doors
             //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
             startActivity(main_intent);
@@ -274,3 +288,4 @@ public class MainActivity extends AppCompatActivity {
 
 
 }
+
