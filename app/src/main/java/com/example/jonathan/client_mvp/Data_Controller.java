@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
 import android.util.Log;
@@ -268,21 +269,21 @@ public class Data_Controller {
 
     private void generic_button_click(View v )
     {
-        ImageButton IB = (ImageButton)v;
+        final ImageButton IB = (ImageButton)v;
         String button_IP = "";
 
         // search button_struct placed_doors() List for the door and get its IP
-        //for (button_struct btn : placed_doors)
-        //{
+        for (button_struct btn : placed_doors)
+        {
 
-          //  if (IB.getId() == btn.getID()) {
+            if (IB.getId() == btn.getID()) {
 
-            //    button_IP = btn.getIP();
-              //  break;
-            //}
-        //}
+                button_IP = btn.getIP();
+                break;
+            }
+        }
 
-        //Log.v("TASK: ", button_IP);
+        Log.v("TASK: ", button_IP);
 
         // udp send to open door and wait for receive message
         //UDP_controller udpTask = new UDP_controller(button_IP);
@@ -294,12 +295,17 @@ public class Data_Controller {
         //}
 
         // Depending on how we lock the door change this. This wait causes an error, crashes the app.
-        //try {
-          //  wait(5000); // Assumed door is open for 5 seconds
-        //} catch (InterruptedException e){}
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Do something after 5s = 5000ms
+                // change door to closed icon
+                IB.setImageResource(R.drawable.closed_door);
+            }
+        }, 5000);
 
-        // change door to closed icon
-        //IB.setImageResource(R.drawable.closed_door);
+
 
     }
 

@@ -2,13 +2,17 @@ package com.example.jonathan.client_mvp;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -35,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
 
     private String cardID;
 
+    Context context = MainActivity.this;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,8 +48,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Passed card id
         Intent main_intent = getIntent();
-        cardID = main_intent.getStringExtra("CardID");
-        Log.v("TASK: ", "MAIN: " + cardID);
+        //cardID = main_intent.getStringExtra("CardID");
+        //Log.v("TASK: ", "MAIN: " + cardID);
 
         final float scale = getResources().getDisplayMetrics().density;
         final Spinner s_items = (Spinner) findViewById(R.id.spn_lvls);
@@ -227,6 +233,34 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return super.onCreateOptionsMenu(menu);
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == R.id.signout){
+            // clear shared preference file
+            SharedPreferences sharedPref = context.getSharedPreferences(
+                    getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.clear();
+            editor.commit();
+
+            // Open new login activity
+            Intent main_intent = new Intent(MainActivity.this, LogIn_oneTIme.class);
+            // Need to pass Card number to next activity, since it is used to open doors
+            //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
+            startActivity(main_intent);
+            // Remove activity from back stack
+            finish(); // clear current data.
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     public void spn_lvlsSelectionChanged(int sel_index){
         dataPull.updateFloor(this, sel_index, main_img);
