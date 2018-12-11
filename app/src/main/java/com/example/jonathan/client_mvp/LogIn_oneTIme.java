@@ -92,7 +92,7 @@ public class LogIn_oneTIme extends AppCompatActivity {
                     if (result == null && em_card != null) {
                         SharedPreferences.Editor editor = sharedPref.edit();
                         editor.putString(getString(R.string.card), em_card);
-                        editor.commit();
+                        editor.apply();
 
                         Intent main_intent = new Intent(LogIn_oneTIme.this, FloorActivity.class);
                         // Need to pass Card number to next activity, since it is used to open doors
@@ -123,9 +123,6 @@ public class LogIn_oneTIme extends AppCompatActivity {
     }
 
     void manualLogin(){
-
-        final SharedPreferences sharedPref = context.getSharedPreferences(
-                getString(R.string.preference_file_key), Context.MODE_PRIVATE);
 
         // Log in information stored on company server or their preferred online service.
         // For demonstration, we use mySQL workbench
@@ -160,7 +157,8 @@ public class LogIn_oneTIme extends AppCompatActivity {
                 if (em_card == null) {
                     txt_info.setText("NOTHING");
                 } else {
-
+                    final SharedPreferences sharedPref = context.getSharedPreferences(
+                            getString(R.string.preference_file_key), Context.MODE_PRIVATE);
                     // Using saved preferences feature in android to have autologin and save the user's card information.
                     SharedPreferences.Editor editor = sharedPref.edit();
                     // if em_card is assigned a value, now check if the user has checked the box that indicates if they want to have auto log in for next time.
@@ -174,7 +172,7 @@ public class LogIn_oneTIme extends AppCompatActivity {
                     // Save card number in the shared preferences too
                     // Card as key and card number as value
                     editor.putString(getString(R.string.card), em_card);
-                    editor.commit();
+                    editor.apply();
 
                     Intent main_intent = new Intent(LogIn_oneTIme.this, FloorActivity.class);
                     // Need to pass Card number to next activity, since it is used to open doors

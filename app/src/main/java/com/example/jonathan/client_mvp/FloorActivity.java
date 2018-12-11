@@ -137,13 +137,15 @@ public class FloorActivity extends AppCompatActivity {
 
         //create directory to save images
         String intStorageDirectory = getFilesDir().toString();
+        //String save_img_folder = intStorageDirectory + "/images/";
+        //File folder = context.getDir(save_img_folder, Context.MODE_PRIVATE); // should create private directory.
         File folder = new File(intStorageDirectory, "images");
         folder.mkdirs();
         //Log.v("TASK: ", "internal " + intStorageDirectory);
         //Log.v("TASK: ", "new " + folder.getName());
 
-        String save_img_folder = intStorageDirectory + "/images";
-        File comon = new File(save_img_folder);
+        //String save_img_folder = intStorageDirectory + "/images";
+        //File comon = new File(save_img_folder);
         //if(comon.exists()){
         //  Log.v("TASK: ", "initial: " + save_img_folder);
         //}
