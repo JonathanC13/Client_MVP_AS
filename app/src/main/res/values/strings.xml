@@ -7,6 +7,7 @@
 
     <!-- Log in screen -->
     <string name="Welcome">Welcome!</string>
+    <string name="IPlabel">Server IP</string>
     <string name="userlabel">Username</string>
     <string name="passlabel">Password</string>
     <string name="autolog">Auto sign in</string>

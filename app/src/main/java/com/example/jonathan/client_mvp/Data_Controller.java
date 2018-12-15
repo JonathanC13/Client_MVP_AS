@@ -292,7 +292,7 @@ public class Data_Controller {
         // if ack receive that door is opened, change color of door to green for "opened" time
         //if(response == 1){
             IB.setImageResource(R.drawable.open_door);
-        //}
+        //} else { B.setImageResource(R.drawable.bluetooth_fail); }
 
         // Depending on how we lock the door change this. This wait causes an error, crashes the app.
         final Handler handler = new Handler();

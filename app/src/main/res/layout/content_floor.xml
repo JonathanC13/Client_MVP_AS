@@ -84,7 +84,7 @@
                         android:scaleType="fitStart"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:srcCompat="@drawable/main_floor" />
+                        app:srcCompat="@drawable/default_image" />
 
                 </android.support.constraint.ConstraintLayout>
             </ScrollView>

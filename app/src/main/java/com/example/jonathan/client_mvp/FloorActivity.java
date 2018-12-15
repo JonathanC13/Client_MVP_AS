@@ -155,7 +155,7 @@ public class FloorActivity extends AppCompatActivity {
 
 
         // Pass object to DB_controller so it can save the data to it.
-        // Pulls the door images, floors' information, and doors' information
+        // Pulls the floors images, floors' information, and doors' information
         DB_Controller DB_con_con = new DB_Controller(this, dataPull);
 
 

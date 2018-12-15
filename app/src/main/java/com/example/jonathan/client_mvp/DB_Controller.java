@@ -1,6 +1,8 @@
 package com.example.jonathan.client_mvp;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
@@ -37,6 +39,9 @@ import org.apache.http.NameValuePair;
 
 
 public class DB_Controller {
+
+    // Error pop up message if needed
+    private String popUpError;
 
     // Creating JSON Parser object
     JSONParser jParserFlr;
@@ -85,40 +90,6 @@ public class DB_Controller {
     private static String TAG_DR_IP;
 
     // </door columns>
-    // </JSON Node names>
-
-    // <JSON Node names>
-    /*
-    private static final String TAG_SUCCESS = "success";
-    // <image columns>
-    private static final String TAG_IMAGES = "door_icons";
-    private static final String TAG_IMG_PID = "idimg";
-    private static final String TAG_IMG_NM = "nm_img";
-    private static final String TAG_IMG_PATH = "path_img";
-    // </image columns>
-    // <floor columns>
-    private static final String TAG_FLOORS = "arr_floor_rows";
-    private static final String TAG_PID = "idfloor";
-    private static final String TAG_NAME = "nm_floor";
-    private static final String TAG_ORDER = "or_floor";
-    private static final String TAG_IMAGE = "img_path";
-    private static final String TAG_DOORID = "iddoor";
-    // </floor columns>
-    // <door columns>
-    private static final String TAG_DOORS = "arr_doors";
-    private static final String TAG_DR_PID = "iddr";
-    private static final String TAG_DR_NM = "nm_door";
-    private static final String TAG_DR_ID = "iddoor"; // match with TAG_DOORID
-    private static final String TAG_DR_ML = "MarginLeft";
-    private static final String TAG_DR_MT = "MarginTop";
-    private static final String TAG_DR_MR = "MarginRight";
-    private static final String TAG_DR_MB = "MarginBot";
-    private static final String TAG_DR_IP = "IP_door";
-    */
-    // </door columns>
-    // </JSON Node names>
-
-
 
     String save_folder;
 
@@ -131,6 +102,8 @@ public class DB_Controller {
 
 
     public DB_Controller(Context ct, Data_Controller Data_c) {
+        popUpError = "";
+
         Data_shr = Data_c;
         save_folder = Data_c.getFullImgPath() + "/images/";
 
@@ -187,65 +160,7 @@ public class DB_Controller {
         // </door columns>
         // </JSON Node names>
 
-        // initialize by getting the door icons, right not they are just in drawable folder of app
-        /*
-        File mydir = ct.getDir("images", Context.MODE_PRIVATE); //Creating an internal dir;
-        if (!mydir.exists()) {
-            mydir.mkdirs();
-        }
-
-        try {
-            Object result = new LoadAllIcons().execute().get();
-        } catch (Exception e) {
-            Log.v("TASK: ", "img " + e.toString());
-        }
-
-        // Download door icons, get names from the iconList
-        //Log.v("TASK: ", "POST: " + iconList.size());
-        for (String path : iconList){
-            String dl_file = url_server_img + path;
-            // save img to folder
-            String saveloc = save_folder + path;
-
-            URL dl_url = null;
-            Bitmap dl_bp = null;
-            try {
-                dl_url = new URL(dl_file);
-            } catch(Exception e){
-                Log.v("TASK: ", "DR: URL ERR: " + e.toString());
-            }
-            File save_loc = new File(saveloc);
-
-            //Log.v("TASK: ", "saving to" + saveloc );
-            try {
-                //Bitmap dl_bp = downloadImage(dl_file);
-                try {
-                    dl_bp = new webDownloadImage(dl_url).execute().get();
-                } catch (Exception e){
-
-                }
-
-                //Log.v("TASK: ", "BITMAP SIZE: " + dl_file.length());
-                try {
-                    FileOutputStream out = new FileOutputStream(saveloc);
-                    dl_bp.compress(Bitmap.CompressFormat.JPEG, 100, out); // dl_bp is your Bitmap instance
-
-                    // check exist
-                    //if(save_loc.exists()){
-                        //Log.v("TASK: ", "CONFIRM DL: " + saveloc);
-                        //Log.v("TASK: ", "SIZE " + save_loc.length());
-
-
-                    //}
-                    out.flush();
-
-                } catch (IOException e) {
-                    Log.v("TASK: ", "TO file: " + e.toString());
-                }
-
-            } catch (Exception e){}
-        }
-        */
+        // TODO - Get IP from shared preference and have the scripts use it.
 
         // Initialize the floors and doors
         // wait for async task to finish
@@ -253,14 +168,62 @@ public class DB_Controller {
         refreshDoors();
 
         //-LoadAllFloors();
+        refreshFloors();
+
+        // Download floor images
+        loadFloorImages();
+
+        // Sort floors and add corresponding doors
+        organizeFloorInfo();
+
+        // Alert pop up if there are any errors or log messages that the user should see.
+        if(popUpError.length() > 0) {
+            AlertDialog alertDialog = new AlertDialog.Builder(ct).create();
+            alertDialog.setTitle("Alert");
+            alertDialog.setMessage(popUpError);
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+            alertDialog.show();
+        }
+    }
+
+    public void refreshDoors(){
+        try {
+            Object result = new LoadAllDoors().execute().get();
+
+            if (result != null) {
+                if (result.equals("error")) {
+                    popUpError += "Error: Access to door information failed, may be due to connection or web server problems.\n";
+                }
+            }
+        } catch (Exception e) {
+            Log.v("TASK: ", "door " + e.toString());
+            popUpError += "Error: Access to door information failed, may be due to connection or web server problems.\n";
+        }
+    }
+
+    public void refreshFloors(){
         try {
             Object result = new LoadAllFloors().execute().get();
+
+            if (result != null) {
+                if (result.equals("error")) {
+                    popUpError += "Error: Access to floor information failed, may be due to connection or web server problems.\n";
+                } else if (result.equals("noFloors")) {
+                    popUpError += "Log: No floors were found.\n";
+                }
+            }
         } catch (Exception e) {
             Log.v("TASK: ", "flr " + e.toString());
+            popUpError += "Error: Access to floor information failed, may be due to connection or web server problems.\n";
         }
+    }
 
-
-        // Download floor image
+    public void loadFloorImages(){
         //Log.v("TASK: ", "POST: " + floorList.size());
         for (HashMap<String, String> path : floorList){
             String dl_file = url_server_img + path.get(TAG_IMAGE);
@@ -279,32 +242,31 @@ public class DB_Controller {
                 //Bitmap dl_bp = downloadImage(dl_file);
                 try {
                     dl_bp = new webDownloadImage(dl_url).execute().get();
-                } catch (Exception e){}
 
+                    if(dl_bp == null){
+                        popUpError += "Error: Could not retrieve from server image for " + path.get(TAG_IMAGE) + ".\n";
+                        continue;
+                    }
 
+                } catch (Exception e){
+                    popUpError += "Error: Could not retrieve image from server for " + path.get(TAG_IMAGE) + ".\n";
+                    continue;
+                }
+
+                // save image on device
                 try {
                     FileOutputStream out = new FileOutputStream(saveloc);
                     dl_bp.compress(Bitmap.CompressFormat.JPEG, 100, out); // dl_bp is your Bitmap instance
 
-                    //if(save_loc.exists()){
-                      //  Log.v("TASK: ",  "DL: " + saveloc);
-                    //}
-
                 } catch (IOException e) {
                     e.printStackTrace();
+                    popUpError += "Error: Could not save image on device for " + path.get(TAG_IMAGE) + ".\n";
                 }
 
-            } catch (Exception e){}
+            } catch (Exception e){
+                popUpError += "Error: Could not save image on device for " + path.get(TAG_IMAGE) + ".\n";
+            }
 
-        }
-        //
-    }
-
-    public void refreshDoors(){
-        try {
-            Object result = new LoadAllDoors().execute().get();
-        } catch (Exception e) {
-            Log.v("TASK: ", "door " + e.toString());
         }
     }
 
@@ -348,7 +310,7 @@ public class DB_Controller {
 
             bmImg = BitmapFactory.decodeStream(is);
         } catch (Exception e) {
-            // TODO Auto-generated catch block
+
             Log.v("TASK: ", "DOWNLOAD: " + e.toString());
             return null;
         }
@@ -357,6 +319,49 @@ public class DB_Controller {
         return bmImg;
     }
 
+    private void organizeFloorInfo(){
+        int max_count = 0;
+        // get count
+        for(HashMap<String, String> flr : floorList){
+            max_count ++;
+        }
+
+        // Reset Data_shr floor list
+        Data_shr.resetFloorList();
+
+        //Log.v("TASK: ", String.valueOf(max_count));
+
+        // Sort and Add
+        // do until max rows, just in case the admin missed a floor number
+        for(int i = 0; i < max_count; i ++){
+
+            // check whole list for matching floor number,
+            for (HashMap<String, String> curFlr : floorList) {
+
+                if(curFlr.get(TAG_ORDER).equals(String.valueOf(i))){
+
+                    // new floor collection
+                    Data_Collection new_flr = new Data_Collection();
+
+                    String floor_name = curFlr.get(TAG_NAME);
+                    String floor_number = curFlr.get(TAG_ORDER);
+                    String dis_name = String.valueOf(i) + ". " + floor_name;
+                    String img_dir = save_folder + curFlr.get(TAG_IMAGE); // path to save image.
+                    String doorID = curFlr.get(TAG_DOORID);
+
+                    // set floor values
+                    new_flr.set_floor(floor_name, floor_number, dis_name, img_dir, doorID);
+
+                    Data_shr.flr_dr_class_list.add(new_flr);
+                    //Log.v("TASK: ", "getflrs " + dis_name);
+
+                    // Look through door list and add relevant doors into this floor's collection
+                    setDoors(new_flr, doorID);
+
+                }
+            }
+        }
+    }
 
     // Since there will be 2 tasks that are very similar, we may refactor. Smelly code
     // May not even use async tasks, since getting images and floors both write to memory ; better to be sequential.
@@ -607,12 +612,12 @@ public class DB_Controller {
 
                     }
                 } else {
-                    // no products found
-                    // Launch Add New product Activity
-
+                    // no doors found
+                    // do nothing
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
+                return "error";
             }
 
             return null;
@@ -693,54 +698,12 @@ public class DB_Controller {
                         floorList.add(map);
                     }
                 } else {
-                    // no products found
-                    // Launch Add New product Activity
-
+                    // no floors found
+                    return "noFloors";
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
-            }
-
-            int max_count = 0;
-            // get count
-            for(HashMap<String, String> flr : floorList){
-                max_count ++;
-            }
-
-            // Reset Data_shr floor list
-            Data_shr.resetFloorList();
-            
-            //Log.v("TASK: ", String.valueOf(max_count));
-
-            // Sort and Add
-            // do until max rows, just in case the admin missed a floor number
-            for(int i = 0; i < max_count; i ++){
-
-                // check whole list for matching floor number,
-                for (HashMap<String, String> curFlr : floorList) {
-
-                    if(curFlr.get(TAG_ORDER).equals(String.valueOf(i))){
-
-                        // new floor collection
-                        Data_Collection new_flr = new Data_Collection();
-
-                        String floor_name = curFlr.get(TAG_NAME);
-                        String floor_number = curFlr.get(TAG_ORDER);
-                        String dis_name = String.valueOf(i) + ". " + floor_name;
-                        String img_dir = save_folder + curFlr.get(TAG_IMAGE); // path to save image.
-                        String doorID = curFlr.get(TAG_DOORID);
-
-                        // set floor values
-                        new_flr.set_floor(floor_name, floor_number, dis_name, img_dir, doorID);
-
-                        Data_shr.flr_dr_class_list.add(new_flr);
-                        //Log.v("TASK: ", "getflrs " + dis_name);
-
-                        // Look through door list and add relevant doors into this floor's collection
-                        setDoors(new_flr, doorID);
-
-                    }
-                }
+                return "error";
             }
 
             return null;
