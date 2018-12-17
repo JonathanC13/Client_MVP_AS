@@ -5,72 +5,81 @@
  * Following code will list all the products
  */
 
-// array for JSON response
-$response = array();
 
-// include db connect class
-//require_once __DIR__ . '/db_connect.php';
-include 'db_connect.php';
+if(isset($_POST['ip'])) {
 
-// connecting to db
-$mysqli = connect();
+  $serverNm = (string)$_POST['ip'];
+  //$serverNm = "localhost";
+  // array for JSON response
+  $response = array();
 
-// get all products from products table
-//$result = $db->query("SELECT * FROM floor_collection_0");
+  // include db connect class
+  require_once __DIR__ . '/db_config.php';
+  include 'db_connect.php';
 
-//$mysqli->query("SELECT * FROM floor_collection_0");
+  $tb_floor = TB_FLOORSTABLE;
 
-// Prepare a select statement
-$query = "SELECT * FROM floor_collection_0";
-//$stmt = $mysqli->prepare($query);
+  // connecting to db
+  $mysqli = connect($serverNm);
 
-// execute the statement
-//$stmt->execute();
+  // get all products from products table
+  //$result = $db->query("SELECT * FROM floor_collection_0");
 
-// close statement
-//$stmt->close();
+  //$mysqli->query("SELECT * FROM floor_collection_0");
 
-//
+  // Prepare a select statement
+  $query = "SELECT * FROM $tb_floor";
+  //$stmt = $mysqli->prepare($query);
 
-// SELECT
-// True if != 0;
-if ($result = $mysqli->query($query)) {
+  // execute the statement
+  //$stmt->execute();
 
-    // an array for the floor_rows
-    $response["arr_floor_rows"] = array();
+  // close statement
+  //$stmt->close();
 
-    // floor_collection_0 table columns
-    //  idfloor | nm_floor | or_floor | img_path | iddoor
-    //output a row here
-    while ($row = $result->fetch_row()){
-      //printf("id: %s, name: %s\n", $row[0], $row[1] );
-      $floor_rows = array();
+  //
 
-      $floor_rows["idfloor"] = $row[0];
-      $floor_rows["nm_floor"] = $row[1];
-      $floor_rows["or_floor"] = $row[2];
-      $floor_rows["img_path"] = $row[3];
-      $floor_rows["iddoor"] = $row[4];
+  // SELECT
+  // True if != 0;
+  if ($result = $mysqli->query($query)) {
 
-      // push single floor into final response array
-      array_push($response["arr_floor_rows"], $floor_rows);
-    }
+      // an array for the floor_rows
+      $response["arr_floor_rows"] = array();
 
-    // on success, tag it
-    $response["success"] = 1;
+      // floor_collection_0 table columns
+      //  idfloor | nm_floor | or_floor | img_path | iddoor
+      //output a row here
+      while ($row = $result->fetch_row()){
+        //printf("id: %s, name: %s\n", $row[0], $row[1] );
+        $floor_rows = array();
 
-    echo json_encode($response);
+        $floor_rows["idfloor"] = $row[0];
+        $floor_rows["nm_floor"] = $row[1];
+        $floor_rows["or_floor"] = $row[2];
+        $floor_rows["img_path"] = $row[3];
+        $floor_rows["iddoor"] = $row[4];
 
-} else {
-  // no floors found
-    $response["success"] = 0;
-    $response["message"] = "No floors found";
+        // push single floor into final response array
+        array_push($response["arr_floor_rows"], $floor_rows);
+      }
 
-    // echo no users JSON
-    echo json_encode($response);
+      // on success, tag it
+      $response["success"] = 1;
+
+      echo json_encode($response);
+
+  } else {
+    // no floors found
+      $response["success"] = 0;
+      $response["message"] = "No floors found";
+
+      // echo no users JSON
+      echo json_encode($response);
+  }
+
+  close($mysqli);
 }
 
-close($mysqli);
 /*
 // check for empty result
 if (mysql_num_rows($result) > 0) {

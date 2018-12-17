@@ -19,6 +19,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.util.Log;
 
 
@@ -32,6 +35,7 @@ public class JSONParser {
     public JSONParser() {
 
     }
+
 
     // function get json from url
     // by making HTTP POST or GET mehtod
@@ -72,6 +76,10 @@ public class JSONParser {
 
         } catch (IOException e) {
             e.printStackTrace();
+
+        } catch (Exception e){
+
+            return null;
 
         }
 

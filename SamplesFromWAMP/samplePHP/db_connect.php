@@ -17,24 +17,19 @@
     /**
      * Function to connect with database
      */ //$firstTime, $IP
-    function connect() {
+    function connect($serverNm) {
         // import database connection variables
 
         require_once __DIR__ . '/db_config.php';
-/*
-        $IPchosen = '0';
-        // first time connect to DB, REQUIRE connection to central server.
-        if($firstTime == 0){
-          if(strcmp($IPchosen, '0') == 0){
-            // must be default host.
-            $IPchosen = DB_SERVER;
-          }
+
+        if($serverNm == "10.0.2.2"){
+          $serverName = "localhost";
         } else {
-          $IPchosen = $IP;
-        }*/
+          $serverName = $serverNm;
+        }
 
         // Connecting to mysql server and select database
-        $con = mysqli_connect(DB_SERVER, DB_USER, DB_PASSWORD, DB_DATABASEFLOORS);
+        $con = mysqli_connect($serverName, DB_USER, DB_PASSWORD, DB_DATABASEFLOORS);
 
 
         // Check connection

@@ -34,8 +34,10 @@ public class FloorActivity extends AppCompatActivity {
     private ImageView main_img;
     private Data_Controller dataPull;
     private ConstraintLayout grd_scr;
+    private float scale;
 
     private String cardID;
+    private String intStorageDirectory;
 
     Context context = FloorActivity.this;
 
@@ -57,7 +59,7 @@ public class FloorActivity extends AppCompatActivity {
         });
         */
 
-        final float scale = getResources().getDisplayMetrics().density;
+        scale = getResources().getDisplayMetrics().density;
         final Spinner s_items = (Spinner) findViewById(R.id.spn_lvls);
         final Button upBtn = (Button) findViewById(R.id.btn_lvlUp);
         final Button dnBtn = (Button) findViewById(R.id.btn_lvlDn);
@@ -136,7 +138,7 @@ public class FloorActivity extends AppCompatActivity {
         //String app_dir = this.uri.toString();
 
         //create directory to save images
-        String intStorageDirectory = getFilesDir().toString();
+        intStorageDirectory = getFilesDir().toString();
         //String save_img_folder = intStorageDirectory + "/images/";
         //File folder = context.getDir(save_img_folder, Context.MODE_PRIVATE); // should create private directory.
         File folder = new File(intStorageDirectory, "images");
@@ -158,12 +160,14 @@ public class FloorActivity extends AppCompatActivity {
         // Pulls the floors images, floors' information, and doors' information
         DB_Controller DB_con_con = new DB_Controller(this, dataPull);
 
-
-        // Fill spinner, need to pass context to be able to fill it.
-        dataPull.set_combobox_items(this, s_items, main_img, dnBtn); // <------- IN HERE, IMAGE SETTING
-        // since starting index is 0, down button is not clickable
-        dnBtn.setClickable(false);
-
+        // if empty, disable both buttons
+        if (dataPull.flr_dr_class_list.size() > 0) {
+            // Fill spinner, need to pass context to be able to fill it.
+            dataPull.set_combobox_items(this, s_items, main_img, upBtn, dnBtn); // <------- IN HERE, IMAGE SETTING
+        } else {
+            upBtn.setClickable(false);
+            dnBtn.setClickable(false);
+        }
 
         // spinner listener
         s_items.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -171,15 +175,20 @@ public class FloorActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 int max_ind = dataPull.flr_dr_class_list.size();
 
-                if(position >= max_ind -1) {
+                if(max_ind > 0) {
+                    if (position >= max_ind - 1) {
+                        upBtn.setClickable(false);
+                        dnBtn.setClickable(true);
+                    } else if (position <= 0) {
+                        upBtn.setClickable(true);
+                        dnBtn.setClickable(false);
+                    }
+
+                    spn_lvlsSelectionChanged(position);
+                } else {
                     upBtn.setClickable(false);
-                    dnBtn.setClickable(true);
-                } else if (position <= 0){
-                    upBtn.setClickable(true);
                     dnBtn.setClickable(false);
                 }
-
-                spn_lvlsSelectionChanged(position);
             }
 
             @Override
@@ -197,20 +206,25 @@ public class FloorActivity extends AppCompatActivity {
 
                 int max_ind = dataPull.flr_dr_class_list.size();
 
-                if (new_sel >= max_ind-1){
-                    new_sel = max_ind-1;
+                if(max_ind > 0) {
+                    if (new_sel >= max_ind - 1) {
+                        new_sel = max_ind - 1;
 
+                        upBtn.setClickable(false);
+                    }
+                    if (new_sel > 0) {
+                        // since increase, make button clickable
+                        dnBtn.setClickable(true);
+                    }
+
+                    // set spinner item
+                    s_items.setSelection(new_sel);
+
+                    upBtn_onClick(new_sel);
+                } else {
                     upBtn.setClickable(false);
+                    dnBtn.setClickable(false);
                 }
-                if (new_sel > 0){
-                    // since increase, make button clickable
-                    dnBtn.setClickable(true);
-                }
-
-                // set spinner item
-                s_items.setSelection(new_sel);
-
-                upBtn_onClick(new_sel);
             }
         });
 
@@ -221,20 +235,25 @@ public class FloorActivity extends AppCompatActivity {
                 int new_sel = cur_sel - 1;
                 int max_id = dataPull.flr_dr_class_list.size();
 
-                if (new_sel <= 0){
-                    new_sel = 0;
+                if(max_id > 0) {
+                    if (new_sel <= 0) {
+                        new_sel = 0;
+                        dnBtn.setClickable(false);
+
+                    }
+                    if (new_sel < max_id) {
+                        // since decrease, make button clickable
+                        upBtn.setClickable(true);
+
+                    }
+                    // set spinner item
+                    s_items.setSelection(new_sel);
+
+                    dnBtn_onClick(new_sel);
+                } else {
+                    upBtn.setClickable(false);
                     dnBtn.setClickable(false);
-
                 }
-                if (new_sel < max_id){
-                    // since decrease, make button clickable
-                    upBtn.setClickable(true);
-
-                }
-                // set spinner item
-                s_items.setSelection(new_sel);
-
-                dnBtn_onClick(new_sel);
             }
         });
 
@@ -251,7 +270,25 @@ public class FloorActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if(item.getItemId() == R.id.signout){
+
+        if(item.getItemId() == R.id.refresh){
+            dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale);
+            DB_Controller DB_con_con = new DB_Controller(this, dataPull);
+
+            Spinner s_items1 = (Spinner) findViewById(R.id.spn_lvls);
+            Button upBtn1 = (Button) findViewById(R.id.btn_lvlUp);
+            Button dnBtn1 = (Button) findViewById(R.id.btn_lvlDn);
+
+            // if empty, disable both buttons
+            if (dataPull.flr_dr_class_list.size() > 0) {
+                // Fill spinner, need to pass context to be able to fill it.
+                dataPull.set_combobox_items(this, s_items1, main_img, upBtn1, dnBtn1); // <------- IN HERE, IMAGE SETTING
+            } else {
+                upBtn1.setClickable(false);
+                dnBtn1.setClickable(false);
+            }
+        }
+        else if(item.getItemId() == R.id.signout){
             // clear shared preference file
             SharedPreferences sharedPref = context.getSharedPreferences(
                     getString(R.string.preference_file_key), Context.MODE_PRIVATE);

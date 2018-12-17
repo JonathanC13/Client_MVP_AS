@@ -3,20 +3,13 @@ package com.example.jonathan.client_mvp;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.ImageView;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -24,6 +17,7 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,25 +86,57 @@ public class DB_Controller {
     // </door columns>
 
     String save_folder;
+    private String webserverName;
 
-    // products JSONArray
-    JSONArray products = null;
+    // <async return values>
+    private int at_success = 0;
+    private int at_error = 1;
+    private int at_noFloors = 2;
+    private int at_portError = 3;
+    // </async return values>
 
     Data_Controller Data_shr;
+    private Context cont;
 
     public DB_Controller(){}
 
 
     public DB_Controller(Context ct, Data_Controller Data_c) {
+
+        cont = ct;
         popUpError = "";
 
         Data_shr = Data_c;
         save_folder = Data_c.getFullImgPath() + "/images/";
 
+        // <Info from shared preference file>
+        String s_fail = cont.getString(R.string.failtag);
+        // Get IP from shared preference and have the scripts use it.
+        final SharedPreferences sharedPref = cont.getSharedPreferences(cont.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        webserverName = sharedPref.getString(cont.getString(R.string.IPlabel), s_fail);
+        String sharedp_serverPort = sharedPref.getString(cont.getString(R.string.Portlabel), s_fail);
+
+        // PHP uses "localhost" while HTTP request uses the IP sequence.
+        String s_serverIP = "";
+        String s_localhost = ct.getResources().getString(R.string.s_local);
+        String ip_local = ct.getResources().getString(R.string.localIP);
+        if(webserverName.equals(s_localhost)){
+            s_serverIP = ip_local;
+        } else {
+            s_serverIP = webserverName;
+        }
+
+        String s_serverPort = "";
+        if(sharedp_serverPort.length() > 0) {
+            s_serverPort = ":" + sharedp_serverPort;
+            //Log.v("TASK: ", "MAIN "+ s_serverIP + " " + s_serverPort);
+        } else {
+            s_serverPort = "";
+        }
+        // </Info from shared preference file>
+
         // <get url strings>
         String s_http = ct.getResources().getString(R.string.http);
-        String s_serverIP = ct.getResources().getString(R.string.serverIP);
-        String s_serverPort = ct.getResources().getString(R.string.serverPort);
         String s_phpFolder = ct.getResources().getString(R.string.phpFolder);
         String s_imgFolder = ct.getResources().getString(R.string.imgFolder);
 
@@ -160,8 +186,6 @@ public class DB_Controller {
         // </door columns>
         // </JSON Node names>
 
-        // TODO - Get IP from shared preference and have the scripts use it.
-
         // Initialize the floors and doors
         // wait for async task to finish
         //-LoadAllDoors();
@@ -195,14 +219,16 @@ public class DB_Controller {
         try {
             Object result = new LoadAllDoors().execute().get();
 
-            if (result != null) {
-                if (result.equals("error")) {
-                    popUpError += "Error: Access to door information failed, may be due to connection or web server problems.\n";
+            if (!result.equals(at_success)) {
+                if (result.equals(at_error)) {
+                    popUpError += "Error: Access to door information failed, may be due to incorrect port, failed connection, or web server problems.\n";
+                } else if (result.equals(at_portError)){
+                    popUpError += "Error: Access to door information failed, incorrect port likely the cause.\n";
                 }
             }
         } catch (Exception e) {
             Log.v("TASK: ", "door " + e.toString());
-            popUpError += "Error: Access to door information failed, may be due to connection or web server problems.\n";
+            popUpError += "Error: Access to door information failed, may be due to incorrect port, failed connection, or web server problems.\n";
         }
     }
 
@@ -210,22 +236,25 @@ public class DB_Controller {
         try {
             Object result = new LoadAllFloors().execute().get();
 
-            if (result != null) {
-                if (result.equals("error")) {
-                    popUpError += "Error: Access to floor information failed, may be due to connection or web server problems.\n";
-                } else if (result.equals("noFloors")) {
+            if (!result.equals(at_success)) {
+                if (result.equals(at_error)) {
+                    popUpError += "Error: Access to floor information failed, may be due to incorrect port, failed connection, or web server problems.\n";
+                } else if (result.equals(at_noFloors)) {
                     popUpError += "Log: No floors were found.\n";
+                } else if (result.equals(at_portError)){
+                    popUpError += "Error: Access to floor information failed, incorrect port likely the cause.\n";
                 }
             }
         } catch (Exception e) {
             Log.v("TASK: ", "flr " + e.toString());
-            popUpError += "Error: Access to floor information failed, may be due to connection or web server problems.\n";
+            popUpError += "Error: Access to floor information failed, may be due to incorrect port, failed connection, or web server problems.\n";
         }
     }
 
     public void loadFloorImages(){
         //Log.v("TASK: ", "POST: " + floorList.size());
         for (HashMap<String, String> path : floorList){
+            int noImageFlag = 1;
             String dl_file = url_server_img + path.get(TAG_IMAGE);
             //Log.v("TASK: ",  "WEB SERVER "+ dl_file);
             // save img to folder
@@ -245,12 +274,18 @@ public class DB_Controller {
 
                     if(dl_bp == null){
                         popUpError += "Error: Could not retrieve from server image for " + path.get(TAG_IMAGE) + ".\n";
-                        continue;
+
+                        noImageFlag = 0;
                     }
 
                 } catch (Exception e){
                     popUpError += "Error: Could not retrieve image from server for " + path.get(TAG_IMAGE) + ".\n";
-                    continue;
+                    noImageFlag = 0;
+                }
+
+                // Set default image if could not retrieve one from the web server
+                if (noImageFlag == 0){
+                    dl_bp = BitmapFactory.decodeResource(cont.getResources(), R.drawable.default_floor_image);
                 }
 
                 // save image on device
@@ -311,7 +346,7 @@ public class DB_Controller {
             bmImg = BitmapFactory.decodeStream(is);
         } catch (Exception e) {
 
-            Log.v("TASK: ", "DOWNLOAD: " + e.toString());
+            //Log.v("TASK: ", "DOWNLOAD: " + e.toString());
             return null;
         }
 
@@ -387,9 +422,11 @@ public class DB_Controller {
 
                 bmImg = BitmapFactory.decodeStream(is);
                 //Log.v("TASK: ", "INPUT " + bmImg.getByteCount());
-            } catch (Exception e) {
+            } catch (FileNotFoundException e) {
                 // TODO Auto-generated catch block
                 Log.v("TASK: ", "DOWNLOAD: " + e.toString());
+                return null;
+            } catch (Exception e){
                 return null;
             }
             return bmImg;
@@ -397,73 +434,6 @@ public class DB_Controller {
         protected void onPostExecute(String file_url) {
             // dismiss the dialog after getting all products
         }
-    }
-
-    /**
-     * Background Async Task to Load all product by making HTTP Request
-     * */
-    class LoadAllIcons extends AsyncTask<String, String, String> {
-
-        /**
-         * Before starting background thread Show Progress Dialog
-         * */
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-        }
-
-        /**
-         * getting All products from url
-         * */
-        protected String doInBackground(String... args) {
-
-            jParserFlr = new JSONParser();
-            // Building Parameters
-            List<NameValuePair> params = new ArrayList<NameValuePair>();
-            // getting JSON string from URL
-            JSONObject json = jParserFlr.makeHttpRequest(url_all_icons, "POST", params);
-
-            try {
-                // Checking for SUCCESS TAG
-                int success = json.getInt(TAG_SUCCESS);
-
-                if (success == 1) {
-                    // Images found found
-                    // Getting Array of Floors
-                    products = json.getJSONArray(TAG_IMAGES);
-
-                    // looping through All floors
-                    for (int i = 0; i < products.length(); i++) {
-                        JSONObject c = products.getJSONObject(i);
-
-                        // Storing each json item in variable
-                        String img_name = c.getString(TAG_IMG_PATH);
-                        //Log.v("TASK: ", "EX: " + img_name);
-                        // adding HashList to ArrayList
-                        iconList.add(img_name);
-                    }
-                } else {
-                    // no products found
-                    // Launch Add New product Activity
-
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            return null;
-        }
-
-        /**
-         * After completing background task Dismiss the progress dialog
-         * **/
-        protected void onPostExecute(String file_url) {
-            // dismiss the dialog after getting all products
-
-            //
-        }
-
     }
 
     // <Task to get all images and save>
@@ -547,7 +517,7 @@ public class DB_Controller {
     /**
      * Background Async Task to Load all product by making HTTP Request
      * */
-    class LoadAllDoors extends AsyncTask<String, String, String> {
+    class LoadAllDoors extends AsyncTask<String, Integer, Integer> {
 
         /**
          * Before starting background thread Show Progress Dialog
@@ -561,15 +531,21 @@ public class DB_Controller {
         /**
          * getting All products from url
          * */
-        protected String doInBackground(String... args) {
+        protected Integer doInBackground(String... args) {
+            JSONArray products = null;
             jParserDr = new JSONParser();
 
             doorList = new ArrayList<HashMap<String, String>>();
 
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
+            params.add(new BasicNameValuePair("ip", webserverName));
             // getting JSON string from URL
             JSONObject json = jParserDr.makeHttpRequest(url_all_doors, "POST", params);
+
+            if(json == null){
+                return at_portError;
+            }
 
             try {
                 // Checking for SUCCESS TAG
@@ -617,16 +593,16 @@ public class DB_Controller {
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
-                return "error";
+                return at_error;
             }
 
-            return null;
+            return at_success;
         }
 
         /**
          * After completing background task Dismiss the progress dialog
          * **/
-        protected void onPostExecute(String file_url) {
+        protected void onPostExecute(Integer file_url) {
             // dismiss the dialog after getting all products
         }
 
@@ -640,7 +616,7 @@ public class DB_Controller {
     /**
      * Background Async Task to Load all product by making HTTP Request
      * */
-    class LoadAllFloors extends AsyncTask<String, String, String> {
+    class LoadAllFloors extends AsyncTask<String, Integer, Integer> {
 
         /**
          * Before starting background thread Show Progress Dialog
@@ -654,15 +630,21 @@ public class DB_Controller {
         /**
          * getting All products from url
          * */
-        protected String doInBackground(String... args) {
-            
+        protected Integer doInBackground(String... args) {
+            JSONArray products = null;
             floorList = new ArrayList<HashMap<String, String>>();
             
             jParserFlr = new JSONParser();
+
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
+            params.add(new BasicNameValuePair("ip", webserverName));
             // getting JSON string from URL
             JSONObject json = jParserFlr.makeHttpRequest(url_all_floors, "POST", params);
+
+            if(json == null){
+                return at_portError;
+            }
 
             try {
                 // Checking for SUCCESS TAG
@@ -699,20 +681,20 @@ public class DB_Controller {
                     }
                 } else {
                     // no floors found
-                    return "noFloors";
+                    return at_noFloors;
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
-                return "error";
+                return at_error;
             }
 
-            return null;
+            return at_success;
         }
 
         /**
          * After completing background task Dismiss the progress dialog
          * **/
-        protected void onPostExecute(String file_url) {
+        protected void onPostExecute(Integer file_url) {
             // dismiss the dialog after getting all products
 
         }

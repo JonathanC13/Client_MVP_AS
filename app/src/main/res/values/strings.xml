@@ -8,6 +8,7 @@
     <!-- Log in screen -->
     <string name="Welcome">Welcome!</string>
     <string name="IPlabel">Server IP</string>
+    <string name="Portlabel">Server Port</string>
     <string name="userlabel">Username</string>
     <string name="passlabel">Password</string>
     <string name="autolog">Auto sign in</string>
@@ -16,6 +17,8 @@
 
     <!-- url strings -->
     <string name="http">http://</string>
+    <string name="localIP">10.0.2.2</string>
+    <string name="s_local">localhost</string>
     <string name="serverIP">10.0.2.2</string>
     <string name="serverPort">:8080</string>
     <string name="phpFolder">/android_connect/</string>

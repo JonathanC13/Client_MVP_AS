@@ -4,54 +4,61 @@
  * Following code will list all the products
  */
 
-// array for JSON response
-$response = array();
+if(isset($_POST['ip'])){
 
-// include db connect class
-//require_once __DIR__ . '/db_connect.php';
-include 'db_connect.php';
+  $serverNm = (string)$_POST['ip'];
+  //$serverNm = "localhost";
+  // array for JSON response
+  $response = array();
 
-// connecting to db
-$mysqli = connect();
+  // include db connect class
+  require_once __DIR__ . '/db_config.php';
+  include 'db_connect.php';
 
-// get all products from products table
-$query = "SELECT * FROM door_collection_0";
+  $tb_doors = TB_DOORSTABLE;
 
-// check for empty result
-if ($result = $mysqli->query($query)) {
-    // looping through all results
-    // products node
-    $response["arr_doors"] = array();
+  // connecting to db
+  $mysqli = connect($serverNm);
 
-    while ($row = $result->fetch_row()){
-        // temp user array
-        $doors = array();
-        $doors["iddr"] = $row[0];
-        $doors["nm_door"] = $row[1];
-        $doors["iddoor"] = $row[2];
-        $doors["MarginLeft"] = $row[3];
-        $doors["MarginTop"] = $row[4];
-        $doors["MarginRight"] = $row[5];
-        $doors["MarginBot"] = $row[6];
-        $doors["IP_door"] = $row[7];
+  // get all products from products table
+  $query = "SELECT * FROM $tb_doors";
 
-        // push single product into final response array
-        array_push($response["arr_doors"], $doors);
-    }
-    // success
-    $response["success"] = 1;
+  // check for empty result
+  if ($result = $mysqli->query($query)) {
+      // looping through all results
+      // products node
+      $response["arr_doors"] = array();
 
-    // echoing JSON response
-    echo json_encode($response);
-} else {
-    // no products found
-    $response["success"] = 0;
-    $response["message"] = "No products found";
+      while ($row = $result->fetch_row()){
+          // temp user array
+          $doors = array();
+          $doors["iddr"] = $row[0];
+          $doors["nm_door"] = $row[1];
+          $doors["iddoor"] = $row[2];
+          $doors["MarginLeft"] = $row[3];
+          $doors["MarginTop"] = $row[4];
+          $doors["MarginRight"] = $row[5];
+          $doors["MarginBot"] = $row[6];
+          $doors["IP_door"] = $row[7];
 
-    // echo no users JSON
-    echo json_encode($response);
+          // push single product into final response array
+          array_push($response["arr_doors"], $doors);
+      }
+      // success
+      $response["success"] = 1;
+
+      // echoing JSON response
+      echo json_encode($response);
+  } else {
+      // no products found
+      $response["success"] = 0;
+      $response["message"] = "No products found";
+
+      // echo no users JSON
+      echo json_encode($response);
+  }
+
+
+  close($mysqli);
 }
-
-
-close($mysqli);
 ?>

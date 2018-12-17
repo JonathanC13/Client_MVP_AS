@@ -80,7 +80,7 @@ public class Data_Controller {
     }
 
     // Fill spinner, done in main activity, need context
-    public void set_combobox_items(Context main, Spinner cmbo, ImageView imgV, Button dnBtn){
+    public void set_combobox_items(Context main, Spinner cmbo, ImageView imgV, Button upBtn, Button dnBtn){
 
         arr_flr_name = new ArrayList<String>();
 
@@ -211,57 +211,59 @@ public class Data_Controller {
 
         //
         int i = 0;
-        for (door_struct dr : flr_dr_class_list.get(floor_sel).arr_doors){
+        if(flr_dr_class_list.size() != 0 ) {
+            for (door_struct dr : flr_dr_class_list.get(floor_sel).arr_doors) {
 
 
-            // <set button attributes>
-            final ImageButton btn_new = new ImageButton(main);
-            btn_new.setId(i);
+                // <set button attributes>
+                final ImageButton btn_new = new ImageButton(main);
+                btn_new.setId(i);
 
-            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.WRAP_CONTENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT
-            );
-            btn_new.setLayoutParams(params);
+                RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.WRAP_CONTENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT
+                );
+                btn_new.setLayoutParams(params);
 
-            // set size of button
-            btn_new.requestLayout();
-            btn_new.getLayoutParams().width = door_size;
-            btn_new.getLayoutParams().height = door_size;
+                // set size of button
+                btn_new.requestLayout();
+                btn_new.getLayoutParams().width = door_size;
+                btn_new.getLayoutParams().height = door_size;
 
-            // NEED TO SET CONSTRAINTS IN ORDER TO SET MARGINS
-            ConstraintSet set1 = new ConstraintSet();
-            set1.clone(grd_scr);    // get existing constraints into ConstraintSet
+                // NEED TO SET CONSTRAINTS IN ORDER TO SET MARGINS
+                ConstraintSet set1 = new ConstraintSet();
+                set1.clone(grd_scr);    // get existing constraints into ConstraintSet
 
-            set1.connect(btn_new.getId(), ConstraintSet.LEFT, R.id.grd_ScrollV, ConstraintSet.LEFT, 0);
-            set1.connect(btn_new.getId(), ConstraintSet.TOP, R.id.grd_ScrollV, ConstraintSet.TOP, 0);
+                set1.connect(btn_new.getId(), ConstraintSet.LEFT, R.id.grd_ScrollV, ConstraintSet.LEFT, 0);
+                set1.connect(btn_new.getId(), ConstraintSet.TOP, R.id.grd_ScrollV, ConstraintSet.TOP, 0);
 
-            // set image of closed door icon
-            btn_new.setImageResource(R.drawable.closed_door);
+                // set image of closed door icon
+                btn_new.setImageResource(R.drawable.closed_door);
 
-            // Set position on the floor plan
-            double top_marg = dr.getTop() * scale;
-            double left_marg = dr.getLeft() * scale;
-            btn_new.setTranslationY((float)top_marg);
-            btn_new.setTranslationX((float)left_marg); // ONLY THIS WORK, setting margins didn't work with dynamically created
+                // Set position on the floor plan
+                double top_marg = dr.getTop() * scale;
+                double left_marg = dr.getLeft() * scale;
+                btn_new.setTranslationY((float) top_marg);
+                btn_new.setTranslationX((float) left_marg); // ONLY THIS WORK, setting margins didn't work with dynamically created
 
-            //add button to the layout
-            grd_scr.addView(btn_new);
+                //add button to the layout
+                grd_scr.addView(btn_new);
 
-            // generic button click
-            btn_new.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
+                // generic button click
+                btn_new.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
 
-                    generic_button_click(btn_new);
-                }
-            });
+                        generic_button_click(btn_new);
+                    }
+                });
 
-            // </Set button attributes>
+                // </Set button attributes>
 
-            button_struct btn_cr = new button_struct(btn_new, dr.getDrIP(), i);
-            placed_doors.add(btn_cr);
+                button_struct btn_cr = new button_struct(btn_new, dr.getDrIP(), i);
+                placed_doors.add(btn_cr);
 
-            i++;
+                i++;
+            }
         }
 
     }
