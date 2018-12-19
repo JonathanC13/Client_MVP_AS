@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <item android:id="@+id/config" android:title="Change server settings"></item>
     <item android:id="@+id/refresh" android:title="Refresh"></item>
     <item android:id="@+id/signout" android:title="Sign out"></item>
 

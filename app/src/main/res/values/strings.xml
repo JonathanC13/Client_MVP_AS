@@ -3,9 +3,10 @@
     <string name="failtag">fail</string>
 
     <!-- shared preferences -->
-    <string name="preference_file_key">com.example.jonathan.client_mvp.PREFERENCE_KEY</string>
+    <string name="preference_file_key">com.example.jonathan.client_mvp.PREFERENCE_KEY</string> <!-- For sign in -->
+    <string name="preference_server_key">com.example.jonathan.client_mvp.SERVER_KEY</string> <!-- For server config -->
 
-    <!-- Log in screen -->
+    <!-- Sign in screen, IPlabel and Portlabel are for the employee server -->
     <string name="Welcome">Welcome!</string>
     <string name="IPlabel">Server IP</string>
     <string name="Portlabel">Server Port</string>
@@ -67,6 +68,14 @@
     <string name="s_btn_lvlDn">Level Down</string>
     <string name="title_activity_main2">MainActivity2</string>
     <string name="title_activity_settings">Settings</string>
+
+    <!-- Change server setting strings -->
+    <string name="ser_dialogTitle">Change server settings</string>
+    <string name="ser_instruct">(Replace fields you wish to change, leave blank to keep current)</string>
+    <string name="ser_IPtxt">Server IP</string>
+    <string name="ser_Pttxt">Server Port</string>
+    <string name="ser_cancel">Cancel</string>
+    <string name="ser_apply">Apply</string>
 
     <!-- Strings related to Settings -->
 
@@ -140,4 +149,5 @@
 
     <string name="pref_title_vibrate">Vibrate</string>
     <string name="title_activity_floor">FloorActivity</string>
+
 </resources>

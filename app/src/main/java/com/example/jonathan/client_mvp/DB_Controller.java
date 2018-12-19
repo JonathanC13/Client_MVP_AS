@@ -112,7 +112,7 @@ public class DB_Controller {
         // <Info from shared preference file>
         String s_fail = cont.getString(R.string.failtag);
         // Get IP from shared preference and have the scripts use it.
-        final SharedPreferences sharedPref = cont.getSharedPreferences(cont.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        final SharedPreferences sharedPref = cont.getSharedPreferences(cont.getString(R.string.preference_server_key), Context.MODE_PRIVATE);
         webserverName = sharedPref.getString(cont.getString(R.string.IPlabel), s_fail);
         String sharedp_serverPort = sharedPref.getString(cont.getString(R.string.Portlabel), s_fail);
 
@@ -221,14 +221,14 @@ public class DB_Controller {
 
             if (!result.equals(at_success)) {
                 if (result.equals(at_error)) {
-                    popUpError += "Error: Access to door information failed, may be due to incorrect port, failed connection, or web server problems.\n";
+                    popUpError += "Error: Access to door information failed - may need to change server IP and/or port in the menu, it was a failed connection, or there are problems with the web server.\n";
                 } else if (result.equals(at_portError)){
-                    popUpError += "Error: Access to door information failed, incorrect port likely the cause.\n";
+                    popUpError += "Error: Access to door information failed - incorrect server and/or port likely the cause, change the server settings in the menu.\n";
                 }
             }
         } catch (Exception e) {
             Log.v("TASK: ", "door " + e.toString());
-            popUpError += "Error: Access to door information failed, may be due to incorrect port, failed connection, or web server problems.\n";
+            popUpError += "Error: Access to door information failed - may need to change server IP and/or port in the menu, it was a failed connection, or there are problems with the web server.\n";
         }
     }
 
@@ -238,16 +238,16 @@ public class DB_Controller {
 
             if (!result.equals(at_success)) {
                 if (result.equals(at_error)) {
-                    popUpError += "Error: Access to floor information failed, may be due to incorrect port, failed connection, or web server problems.\n";
+                    popUpError += "Error: Access to floor information failed - may need to change server IP and/or port in the menu, it was a failed connection, or there are problems with the web server.\n";
                 } else if (result.equals(at_noFloors)) {
                     popUpError += "Log: No floors were found.\n";
                 } else if (result.equals(at_portError)){
-                    popUpError += "Error: Access to floor information failed, incorrect port likely the cause.\n";
+                    popUpError +=  "Error: Access to floor information failed - incorrect server and/or port likely the cause, change the server settings in the menu.\n";
                 }
             }
         } catch (Exception e) {
-            Log.v("TASK: ", "flr " + e.toString());
-            popUpError += "Error: Access to floor information failed, may be due to incorrect port, failed connection, or web server problems.\n";
+            //Log.v("TASK: ", "flr " + e.toString());
+            popUpError += "Error: Access to floor information failed - may need to change server IP and/or port in the menu, it was a failed connection, or there are problems with the web server.\n";
         }
     }
 

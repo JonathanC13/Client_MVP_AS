@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -182,8 +183,20 @@ public class Data_Controller {
 
     }
 
+    public void emptyInfo(Context m, ImageView imgV, Spinner cmbo){
+
+        imgV.setImageResource(R.drawable.default_floor_image);
+
+        arr_flr_name = new ArrayList<String>();
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(m, android.R.layout.simple_spinner_item, arr_flr_name);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Spinner sItems = cmbo;
+        sItems.setAdapter(adapter);
+
+    }
+
     // Clear doors from previous floor
-    private void clear_prev_doors(Context main){
+    public void clear_prev_doors(Context main){
 
         for(button_struct dr : placed_doors){
             ImageButton curr_btn = (ImageButton) dr.getBtn();

@@ -1,10 +1,14 @@
 package com.example.jonathan.client_mvp;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +27,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
@@ -47,6 +52,36 @@ public class FloorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_floor);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        dataPull = null;
+
+        String s_fail = "fail";
+        String s_copyEmpty = "fail";
+
+        final SharedPreferences server_sharedPref = context.getSharedPreferences(context.getString(R.string.preference_server_key), Context.MODE_PRIVATE);
+        String copyIP_flag = server_sharedPref.getString(getString(R.string.IPlabel), s_copyEmpty);
+        String copyPt_flag = server_sharedPref.getString(getString(R.string.Portlabel), s_copyEmpty);
+
+        // If any of them empty, means need to copy server info from sign in file
+        if(copyIP_flag.equals(s_copyEmpty) || copyPt_flag.equals(s_copyEmpty)) {
+
+            // copy server info from sign in shared preference to one meant for server configuration
+            final SharedPreferences signin_sharedPref = context.getSharedPreferences(context.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+            String sh_autoflag = signin_sharedPref.getString("auto_flag", s_fail);
+
+            String signin_IP = signin_sharedPref.getString(context.getString(R.string.IPlabel), s_fail);
+            String signin_Pt = signin_sharedPref.getString(context.getString(R.string.Portlabel), s_fail);
+
+
+            SharedPreferences.Editor editor = server_sharedPref.edit();
+            editor.putString(getString(R.string.IPlabel), signin_IP);
+            editor.putString(getString(R.string.Portlabel), signin_Pt);
+            editor.apply();
+        }
+
+        Toolbar floorHeader = (Toolbar) findViewById(R.id.toolbar);
+        String curr_server = "Server: " + copyIP_flag + ":" + copyPt_flag;
+        floorHeader.setTitle(curr_server);
 
         /*
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -152,22 +187,8 @@ public class FloorActivity extends AppCompatActivity {
         //  Log.v("TASK: ", "initial: " + save_img_folder);
         //}
 
-        // Object that controls the Data
-        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale);
-
-
-        // Pass object to DB_controller so it can save the data to it.
-        // Pulls the floors images, floors' information, and doors' information
-        DB_Controller DB_con_con = new DB_Controller(this, dataPull);
-
-        // if empty, disable both buttons
-        if (dataPull.flr_dr_class_list.size() > 0) {
-            // Fill spinner, need to pass context to be able to fill it.
-            dataPull.set_combobox_items(this, s_items, main_img, upBtn, dnBtn); // <------- IN HERE, IMAGE SETTING
-        } else {
-            upBtn.setClickable(false);
-            dnBtn.setClickable(false);
-        }
+        // datapull Object that controls the Data
+        this.refreshData();
 
         // spinner listener
         s_items.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -260,6 +281,33 @@ public class FloorActivity extends AppCompatActivity {
 
     }
 
+    public void refreshData(){
+        // clear current doors to clean diaplay
+        if(dataPull != null) {
+            dataPull.clear_prev_doors(this);
+        }
+
+        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale);
+        DB_Controller DB_con_con = new DB_Controller(this, dataPull);
+
+        Spinner s_items1 = (Spinner) findViewById(R.id.spn_lvls);
+        Button upBtn1 = (Button) findViewById(R.id.btn_lvlUp);
+        Button dnBtn1 = (Button) findViewById(R.id.btn_lvlDn);
+
+        // if empty, disable both buttons
+        if (dataPull.flr_dr_class_list.size() > 0) {
+            // Fill spinner, need to pass context to be able to fill it.
+            dataPull.set_combobox_items(this, s_items1, main_img, upBtn1, dnBtn1); // <------- IN HERE, IMAGE SETTING
+        } else {
+
+            final Spinner s_items2 = (Spinner) findViewById(R.id.spn_lvls);
+            dataPull.emptyInfo(context, main_img, s_items2);
+
+            upBtn1.setClickable(false);
+            dnBtn1.setClickable(false);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -271,38 +319,89 @@ public class FloorActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-        if(item.getItemId() == R.id.refresh){
-            dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale);
-            DB_Controller DB_con_con = new DB_Controller(this, dataPull);
+        if(item.getItemId() == R.id.config){
 
-            Spinner s_items1 = (Spinner) findViewById(R.id.spn_lvls);
-            Button upBtn1 = (Button) findViewById(R.id.btn_lvlUp);
-            Button dnBtn1 = (Button) findViewById(R.id.btn_lvlDn);
+            final Dialog dialog = new Dialog(context);
+            dialog.setContentView(R.layout.dialog_changeserver);
+            dialog.setTitle("Change server settings");
 
-            // if empty, disable both buttons
-            if (dataPull.flr_dr_class_list.size() > 0) {
-                // Fill spinner, need to pass context to be able to fill it.
-                dataPull.set_combobox_items(this, s_items1, main_img, upBtn1, dnBtn1); // <------- IN HERE, IMAGE SETTING
-            } else {
-                upBtn1.setClickable(false);
-                dnBtn1.setClickable(false);
-            }
+            Button btn_apply = (Button) dialog.findViewById(R.id.btn_apply);
+            btn_apply.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    EditText new_IP = (EditText) dialog.findViewById(R.id.et_defIP);
+                    EditText new_Port = (EditText) dialog.findViewById(R.id.et_defPort);
+                    String get_newIP = new_IP.getText().toString();
+                    String get_newPort = new_Port.getText().toString();
+
+                    String s_displayServer = "Server: " + get_newIP + ":" + get_newPort;
+                    Toolbar tb_header = (Toolbar) findViewById(R.id.toolbar);
+                    tb_header.setTitle(s_displayServer);
+
+                    // Refresh data with new server data
+                    // Write new info to shared preference file then execute refresh
+                    final SharedPreferences server_sharedPref = context.getSharedPreferences(context.getString(R.string.preference_server_key), Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = server_sharedPref.edit();
+                    editor.putString(getString(R.string.IPlabel), get_newIP);
+                    editor.putString(getString(R.string.Portlabel), get_newPort);
+                    editor.apply();
+
+                    // refresh with new server
+                    refreshData();
+                    dialog.dismiss();
+
+                }
+            });
+
+            Button btn_dismiss = (Button) dialog.findViewById(R.id.btn_dismiss);
+            btn_dismiss.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    dialog.dismiss();
+                }
+            });
+
+            dialog.show();
+
+        }
+        else if(item.getItemId() == R.id.refresh){
+            this.refreshData();
         }
         else if(item.getItemId() == R.id.signout){
-            // clear shared preference file
-            SharedPreferences sharedPref = context.getSharedPreferences(
-                    getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.clear();
-            editor.commit();
 
-            // Open new login activity
-            Intent main_intent = new Intent(FloorActivity.this, LogIn_oneTIme.class);
-            // Need to pass Card number to next activity, since it is used to open doors
-            //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
-            startActivity(main_intent);
-            // Remove activity from back stack
-            finish(); // clear current data.
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setMessage("Are you sure you would like to sign out?").setTitle("Sign out")
+            // buttons
+            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
+                        }
+                    })
+            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    // clear shared preference file
+                    SharedPreferences sharedPref = context.getSharedPreferences(
+                            getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPref.edit();
+                    editor.clear();
+                    editor.commit();
+
+                    // Open new login activity
+                    Intent main_intent = new Intent(FloorActivity.this, LogIn_oneTIme.class);
+                    // Need to pass Card number to next activity, since it is used to open doors
+                    //main_intent.putExtra("CardID", em_card); // don't need if save card number in a shared preference.
+                    startActivity(main_intent);
+                    // Remove activity from back stack
+                    finish(); // clear current data.
+                }
+            });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+
         }
         return super.onOptionsItemSelected(item);
     }

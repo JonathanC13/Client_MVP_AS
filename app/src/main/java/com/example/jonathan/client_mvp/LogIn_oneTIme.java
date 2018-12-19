@@ -177,13 +177,11 @@ public class LogIn_oneTIme extends AppCompatActivity {
                 in_password = et_pass.getText().toString();
 
                 String missingText;
-                if(in_serverIP.length() == 0 || in_serverIP.length() == 0 || in_username.length() == 0 || in_password.length() == 0){
+                // May not require PORT
+                if(in_serverIP.length() == 0 || in_username.length() == 0 || in_password.length() == 0){
                     missingText = "Missing: ";
                     if(in_serverIP.length() == 0){
                         missingText += "Server IP | ";
-                    }
-                    if(in_serverPort.length() == 0){
-                        missingText += "Server Port | ";
                     }
                     if(in_username.length() == 0){
                         missingText += "Username | ";
@@ -202,7 +200,12 @@ public class LogIn_oneTIme extends AppCompatActivity {
                         s_serverIP = in_serverIP;
                     }
 
-                    String s_serverDir = s_http + s_serverIP + ":" + in_serverPort;
+                    String s_serverDir = s_http + s_serverIP ;
+                    // if a port was specified.
+                    if(in_serverPort.length() != 0) {
+                        s_serverDir =  s_serverDir + ":" + in_serverPort;
+                    }
+
                     String s_scriptDir = s_serverDir + s_phpFolder;
 
                     url_validate = s_scriptDir + s_validatePHP;
