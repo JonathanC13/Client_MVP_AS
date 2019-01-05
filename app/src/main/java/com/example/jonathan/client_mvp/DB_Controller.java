@@ -539,7 +539,7 @@ public class DB_Controller {
 
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
-            params.add(new BasicNameValuePair("ip", webserverName));
+            //params.add(new BasicNameValuePair("ip", webserverName));
             // getting JSON string from URL
             JSONObject json = jParserDr.makeHttpRequest(url_all_doors, "POST", params);
 
@@ -638,7 +638,7 @@ public class DB_Controller {
 
             // Building Parameters
             List<NameValuePair> params = new ArrayList<NameValuePair>();
-            params.add(new BasicNameValuePair("ip", webserverName));
+            //params.add(new BasicNameValuePair("ip", webserverName));
             // getting JSON string from URL
             JSONObject json = jParserFlr.makeHttpRequest(url_all_floors, "POST", params);
 

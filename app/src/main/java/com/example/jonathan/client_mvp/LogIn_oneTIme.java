@@ -287,7 +287,7 @@ public class LogIn_oneTIme extends AppCompatActivity {
                 JSONParser jParserLogin = new JSONParser();
                 // Building Parameters
                 List<NameValuePair> params = new ArrayList<NameValuePair>();
-                params.add(new BasicNameValuePair("ip", in_serverIP));
+                //params.add(new BasicNameValuePair("ip", in_serverIP));
                 params.add(new BasicNameValuePair("user", in_username));
                 params.add(new BasicNameValuePair("pass", in_password));
 

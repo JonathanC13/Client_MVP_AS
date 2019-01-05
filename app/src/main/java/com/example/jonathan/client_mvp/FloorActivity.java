@@ -36,6 +36,9 @@ import java.io.File;
 
 public class FloorActivity extends AppCompatActivity {
 
+    // Bluetooth
+    BlueTooth_test bt_test = new BlueTooth_test();
+
     private ImageView main_img;
     private Data_Controller dataPull;
     private ConstraintLayout grd_scr;
@@ -189,6 +192,25 @@ public class FloorActivity extends AppCompatActivity {
 
         // datapull Object that controls the Data
         this.refreshData();
+
+        // Initial Bluetooth scan
+        // for test, only do the initial scan
+        bt_test = new BlueTooth_test();
+        String bt_log = bt_test.refreshBT();
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(bt_log).setTitle("Current BT devices.")
+                // buttons
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Listeners below
 
         // spinner listener
         s_items.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -370,6 +392,8 @@ public class FloorActivity extends AppCompatActivity {
         }
         else if(item.getItemId() == R.id.signout){
 
+            // On sign out may need to clear current Server IP and port for the floors and doors. Right now it keeps the previously set.
+
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setMessage("Are you sure you would like to sign out?").setTitle("Sign out")
             // buttons
@@ -402,7 +426,22 @@ public class FloorActivity extends AppCompatActivity {
             AlertDialog dialog = builder.create();
             dialog.show();
 
+        } else if(item.getItemId() == R.id.bt_test){
+            String btlog = bt_test.refreshBT(); // re-discovers bluetooth devices
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setMessage(btlog).setTitle("Current BT devices.")
+                    // buttons
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            dialogInterface.dismiss();
+                        }
+                    });
+            AlertDialog dialog = builder.create();
+            dialog.show();
         }
+
         return super.onOptionsItemSelected(item);
     }
 
