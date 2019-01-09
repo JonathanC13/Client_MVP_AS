@@ -2,7 +2,7 @@ package com.example.jonathan.client_mvp;
 
 public class door_struct {
 
-    private String name; //Door_1
+    private String name; //Door_1, Used to match Bluetooth device name, must be accurate in Database
 
     // Button attributes
     private double[] door_margin = new double[4]; // margin L,T,R,B - Default HorizontalAlignment = Left, VerticalAlignment = Top

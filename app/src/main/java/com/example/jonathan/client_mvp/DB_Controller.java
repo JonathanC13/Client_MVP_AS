@@ -82,6 +82,7 @@ public class DB_Controller {
     private static String TAG_DR_MR;
     private static String TAG_DR_MB;
     private static String TAG_DR_IP;
+    private static String TAG_DR_UUID;
 
     // </door columns>
 
@@ -183,6 +184,7 @@ public class DB_Controller {
         TAG_DR_MR = ct.getResources().getString(R.string.j_drMR);
         TAG_DR_MB = ct.getResources().getString(R.string.j_drMB);
         TAG_DR_IP = ct.getResources().getString(R.string.j_drIP);
+        TAG_DR_UUID = ct.getResources().getString(R.string.j_drUUID);
         // </door columns>
         // </JSON Node names>
 
@@ -322,6 +324,7 @@ public class DB_Controller {
 
                 String dr_name = dr.get(TAG_DR_NM);
                 String dr_IP = dr.get(TAG_DR_IP);
+
                 //Log.v("TASK: ", "getdrs " + dr_name);
 
                 // create and add door to door list for this floor
@@ -569,6 +572,7 @@ public class DB_Controller {
                         String mRight = c.getString(TAG_DR_MR);
                         String mBot = c.getString(TAG_DR_MB);
                         String drIP = c.getString(TAG_DR_IP);
+                        String drUUID = c.getString(TAG_DR_UUID);
 
                         // creating new HashMap
                         HashMap<String, String> map = new HashMap<String, String>();
@@ -582,6 +586,7 @@ public class DB_Controller {
                         map.put(TAG_DR_MR, mRight);
                         map.put(TAG_DR_MB, mBot);
                         map.put(TAG_DR_IP, drIP);
+                        map.put(TAG_DR_UUID, drUUID);
 
                         // adding HashList to ArrayList
                         doorList.add(map);

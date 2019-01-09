@@ -59,6 +59,7 @@
     <string name="j_drMR">MarginRight</string>
     <string name="j_drMB">MarginBot</string>
     <string name="j_drIP">IP_door</string>
+    <string name="j_drUUID">IP_door</string>
     <string name="title_activity_log_in_one_time">LogIn_oneTIme</string>
     <!-- /door columns -->
     <!-- /JSON node names -->

@@ -37,7 +37,7 @@ import java.io.File;
 public class FloorActivity extends AppCompatActivity {
 
     // Bluetooth
-    BlueTooth_test bt_test = new BlueTooth_test();
+    BlueTooth_test bt_test;
 
     private ImageView main_img;
     private Data_Controller dataPull;
@@ -193,10 +193,12 @@ public class FloorActivity extends AppCompatActivity {
         // datapull Object that controls the Data
         this.refreshData();
 
-        // Initial Bluetooth scan
+        // <Initial Bluetooth scan>
         // for test, only do the initial scan
+
         bt_test = new BlueTooth_test();
         String bt_log = bt_test.refreshBT();
+        /*
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setMessage(bt_log).setTitle("Current BT devices.")
                 // buttons
@@ -209,6 +211,8 @@ public class FloorActivity extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
         dialog.show();
+*/
+        // </Initial Bluetooth scan>
 
         // Listeners below
 
@@ -309,7 +313,7 @@ public class FloorActivity extends AppCompatActivity {
             dataPull.clear_prev_doors(this);
         }
 
-        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale);
+        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale, bt_test, context);
         DB_Controller DB_con_con = new DB_Controller(this, dataPull);
 
         Spinner s_items1 = (Spinner) findViewById(R.id.spn_lvls);
@@ -427,6 +431,7 @@ public class FloorActivity extends AppCompatActivity {
             dialog.show();
 
         } else if(item.getItemId() == R.id.bt_test){
+            /*
             String btlog = bt_test.refreshBT(); // re-discovers bluetooth devices
 
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -440,6 +445,7 @@ public class FloorActivity extends AppCompatActivity {
                     });
             AlertDialog dialog = builder.create();
             dialog.show();
+            */
         }
 
         return super.onOptionsItemSelected(item);

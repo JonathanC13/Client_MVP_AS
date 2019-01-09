@@ -1,5 +1,7 @@
 package com.example.jonathan.client_mvp;
 
+import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -7,6 +9,8 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.os.Message;
+import android.os.ParcelUuid;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
 import android.support.v7.widget.Toolbar;
@@ -30,9 +34,19 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Semaphore;
+
 import android.widget.RelativeLayout.LayoutParams;
 
 public class Data_Controller {
+
+    // Bluetooth discovery
+    BlueTooth_test bt_test = new BlueTooth_test();
+    private BluetoothDevice mDevice = null;
+    private String mConnectedDeviceName = null;
+    private BlueTooth_service mTransferService = null;
+    private int BT_responseFlag = Bluetooth_constants.BT_OTHER;
 
     // <File system info>
     private String curr_app_dir;
@@ -60,7 +74,15 @@ public class Data_Controller {
     // ScrollView internal layout
     ConstraintLayout grd_scr;
 
-    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale){
+    Context currContext;
+
+    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, BlueTooth_test bt, Context cont){
+
+        currContext = cont;
+
+        // shared discover object
+        bt_test = bt;
+
         grd_scr = grd_s;
         scale = IV_scale;
 
@@ -259,6 +281,9 @@ public class Data_Controller {
                 btn_new.setTranslationY((float) top_marg);
                 btn_new.setTranslationX((float) left_marg); // ONLY THIS WORK, setting margins didn't work with dynamically created
 
+                // get the device name
+                String drDev_name = dr.getDrName();
+
                 //add button to the layout
                 grd_scr.addView(btn_new);
 
@@ -272,7 +297,7 @@ public class Data_Controller {
 
                 // </Set button attributes>
 
-                button_struct btn_cr = new button_struct(btn_new, dr.getDrIP(), i);
+                button_struct btn_cr = new button_struct(btn_new, dr.getDrIP(), i, drDev_name);
                 placed_doors.add(btn_cr);
 
                 i++;
@@ -281,15 +306,67 @@ public class Data_Controller {
 
     }
 
+    // Create Handler that gets information back from the Bluetooth_service
+    private final Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg){
+            switch (msg.what){
+                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
+                    switch (msg.arg1) {
+                        case BlueTooth_service.STATE_CONNECTED:
+                            Log.v("TASK: ", "BT: Connected to: " + mConnectedDeviceName);
+                            BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
+                            break;
+                        case BlueTooth_service.STATE_CONNECTING:
+                            Log.v("TASK: ", "BT: Connecting");
+                            break;
+                        case BlueTooth_service.STATE_LISTEN:
+                            // check next case
+                        case BlueTooth_service.STATE_NONE:
+                            Log.v("TASK: ", "BT: Not connected");
+                            break;
 
-    private void generic_button_click(View v )
-    {
-        final ImageButton IB = (ImageButton)v;
+                        default:
+                            break;
+
+                    }
+                    break;
+                case Bluetooth_constants.MESSAGE_WRITE:
+                    byte[] writeBuf = (byte[]) msg.obj;
+                    // construct a string from the valid bytes
+                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
+
+                    break;
+                case Bluetooth_constants.MESSAGE_READ:
+                    byte[] readBuf = (byte[])msg.obj;
+                    // construct a string from the valid bytes in the buffer
+                    // this is the response from the remote device
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+
+                    // todo, analyze the contents and determine what to do
+
+                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
+                    break;
+                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
+                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
+                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
+                    break;
+                case Bluetooth_constants.MESSAGE_TOAST:
+                    break;
+
+            }
+        }
+    };
+
+
+
+    private void generic_button_click(View v ) {
+
+        final ImageButton IB = (ImageButton) v;
         String button_IP = "";
 
         // search button_struct placed_doors() List for the door and get its IP
-        for (button_struct btn : placed_doors)
-        {
+        for (button_struct btn : placed_doors) {
 
             if (IB.getId() == btn.getID()) {
 
@@ -306,7 +383,7 @@ public class Data_Controller {
 
         // if ack receive that door is opened, change color of door to green for "opened" time
         //if(response == 1){
-            IB.setImageResource(R.drawable.open_door);
+        IB.setImageResource(R.drawable.open_door);
         //} else { B.setImageResource(R.drawable.bluetooth_fail); }
 
         // Depending on how we lock the door change this. This wait causes an error, crashes the app.
@@ -322,8 +399,93 @@ public class Data_Controller {
 
 
 
+
+        // <Bluetooth connection>
+        // get the device name
+        mConnectedDeviceName = "";
+        for (button_struct btn : placed_doors) {
+            if (btn.getID() == IB.getId()) {
+                //devName = btn.getDrName();
+                // test, hard code device name
+                mConnectedDeviceName = "123";
+                break;
+            }
+        }
+
+        // look through paired devices set to see if it was paired
+        int foundpaired = 1;
+        UUID currUUID = null;
+        for (BluetoothDevice discoveredDev : bt_test.pairedDevices) {
+            if(discoveredDev.getName() == mConnectedDeviceName){
+                foundpaired = 0;
+                // >> get UUID
+                // https://stackoverflow.com/questions/14812326/android-bluetooth-get-uuids-of-discovered-devices
+                // get the device
+                mDevice = discoveredDev;
+
+                // get the UUID
+                currUUID = bt_test.getUUID(discoveredDev);
+                break;
+            }
+        }
+
+        if (currUUID != null){
+            //
+
+            if(foundpaired == 1){
+                // can do a rescan, but may not want to
+                Log.v("TASK: ", "foundpaired = 1");
+            }
+
+            if (!currUUID.equals("") && currUUID != null){
+                // >> initialize thread for connection for the specific device
+                Log.v("TASK: ", "uuid found: " + currUUID.toString());
+
+                // Initialize service to perform the bluetooth connection
+                mTransferService = new BlueTooth_service(currContext, mHandler, IB); // The door image will be updated based on response of remote device
+
+                // Connect to the remote device
+                mTransferService.connect(mDevice, currUUID);
+
+                // read response from remote device
+                boolean openFlag;
+                openFlag = mTransferService.checkOpenDoor();
+                if (openFlag == true){
+                    // Make icon green to indicate open door
+                } else {
+                    // turn to yellow to indicate connection problem or did not open
+                }
+
+            }
+        } else {
+            // total failure.
+            Log.v("TASK: ", "Total failure");
+        }
+
+
+        // </Bluetooth connection>
+
+
     }
 
+    // Sends message to the remote device
+    // @param message a string of text to send
+    private void sendMessage(String message){
+
+        // check if connection is active
+        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
+            Log.v("TASK: ", "BT: SendMessage fail due to not connected");
+            return;
+        }
+
+        // Check that there's actually something to send
+        if(message.length() > 0){
+            // Get the message bytes and tell the Bluetooth_service to write
+            byte[] send = message.getBytes();
+            mTransferService.write(send);
+
+        }
+    }
 
     public String getFullImgPath(){
         return full_img_path;

@@ -3,44 +3,68 @@ package com.example.jonathan.client_mvp;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.os.ParcelUuid;
+import android.os.Parcelable;
 import android.util.Log;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Set;
+import java.util.UUID;
 
 public class BlueTooth_test extends Activity {
 
-    private int REQUEST_ENABLE_BT = 0;
+    private static final int REQUEST_ENABLE_BT = 0;
 
     public String bt_log;
 
-    BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    BluetoothAdapter mBluetoothAdapter;
     Set<BluetoothDevice> pairedDevices; // query list for discovered bluetooth devices
 
     BlueTooth_test() {
 
     }
 
+    /*
+    public void startBTconnectThread(BluetoothDevice device, UUID currUUID){
+        BT_ConnectThread bt_t = new BT_ConnectThread(device, currUUID);
+        bt_t.start();
+    }
+    */
+
     // Refresh
     // for test returns string of all queried devices
     public String refreshBT(){
 
         bt_log = "";
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
+        Log.v("TASK: ", "RES, START");
         if (mBluetoothAdapter == null) {
             // Device doesn't support Bluetooth
+            Log.v("TASK: ", "NULL BT ADAPTER");
         }
         // else mBluetoothAdapter is assigned the device's Bluetooth adapter (bluetooth radio)
         else {
+            Log.v("TASK: ", "RES, NOT NULL");
             // check if Bluetooth is not enabled
             if (!mBluetoothAdapter.isEnabled()) {
                 // not enabled, turn on
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                Log.v("TASK: ", "RES, NOT ENABLED");
+                // <Crashing>
+                //Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                //startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                // </Crashing>
+                bt_log += "Bluetooth not enabled!";
             } else {
                 initializeDiscovery();
                 // todo, after discovery all done the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
@@ -51,6 +75,32 @@ public class BlueTooth_test extends Activity {
 
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        Log.v("TASK: ", "RES, INTENT");
+        switch (requestCode) {
+            case REQUEST_ENABLE_BT:
+                if (resultCode == RESULT_OK){
+                    //bluetooth is on
+                    Log.v("TASK: ", "RES, ON");
+                }
+                else {
+                    //user is denied turning on Bluetooth
+                    Log.v("TASK: ", "RES, DENIED");
+                }
+                break;
+            default:
+                Log.v("TASK: ", "RES, ??");
+                break;
+        }
+        Log.v("TASK: ", "RES, END 1");
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.v("TASK: ", "RES, END 2");
+
+    }
+
+    /*
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -79,6 +129,7 @@ public class BlueTooth_test extends Activity {
             }
         }
     }
+    */
 
     // initialize discovery
     void initializeDiscovery() {
@@ -112,6 +163,28 @@ public class BlueTooth_test extends Activity {
         // </Query snippet>
     }
 
+    public UUID getUUID(BluetoothDevice dev){
+
+        // check if discovering
+        if(mBluetoothAdapter.isDiscovering()){
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        // request the UUID from the device
+        boolean res = dev.fetchUuidsWithSdp();
+        ParcelUuid[] uuidExtra = dev.getUuids();
+        UUID currUUID = null;
+
+        for(ParcelUuid uuid : uuidExtra){
+            currUUID = uuid.getUuid();
+        }
+
+        if(currUUID == null){
+            Log.v("TASK: ", "UUID< NULL");
+        }
+
+        return currUUID;
+    }
+
     // <Discover devices>
     @Override
     protected void onCreate(Bundle saveInstanceState){
@@ -136,7 +209,7 @@ public class BlueTooth_test extends Activity {
 
                 // Can save into a data structure here as they discover
             }
-            /* // discovery constant
+            /* // constant discovery loop
             else if (BluetoothDevice.ACTION_DISCOVERY_FINISHED.equals(action)){
                 mBluetoothAdapter.startDiscovery();
             }
@@ -154,4 +227,6 @@ public class BlueTooth_test extends Activity {
     }
 
     // </Discover devices>
+
+
 }

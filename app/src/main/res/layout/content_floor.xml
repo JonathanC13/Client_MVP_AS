@@ -36,19 +36,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="25"
-            android:text="@string/s_btn_lvlDn" />
+            android:text="@string/s_btn_lvlDn"
+            android:textSize="10sp" />
 
         <Button
             android:id="@+id/btn_lvlUp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="25"
+            android:textSize="10sp"
             android:text="@string/s_btn_lvlUp" />
     </LinearLayout>
 
+    <!-- layout_width = 352 dp-->
     <android.support.constraint.ConstraintLayout
         android:id="@+id/linearLayout2"
-        android:layout_width="352dp"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="16dp"
         android:layout_marginLeft="16dp"
@@ -64,12 +67,15 @@
 
         <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:fadeScrollbars="false">
 
 
             <ScrollView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:fadeScrollbars="false">
+
 
                 <android.support.constraint.ConstraintLayout
                     android:id="@+id/grd_ScrollV"
