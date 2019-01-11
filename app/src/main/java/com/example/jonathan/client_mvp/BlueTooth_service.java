@@ -30,27 +30,43 @@ public class BlueTooth_service {
     private int mNewState;
     private UUID mUUID;
 
-    // Door ID so it can be updated from here
-    ImageButton doorImg;
-
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;         // doing noting
     public static final int STATE_LISTEN = 1;       // now listening for incoming connection
     public static final int STATE_CONNECTING = 2;   //now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;    // now connected to a remote device
 
-    public BlueTooth_service (Context context, Handler handler, ImageButton currDoorImg){
+    public BlueTooth_service (Context context, Handler handler){
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
         mNewState = mState;
         mHandler = handler;
-        doorImg = currDoorImg;
     }
 
-    /*
+    /**
+     * Return the current connection state
+     * @param
+     */
+    public synchronized int getState(){
+        return mState;
+    }
+
+    /**
+     * Update state
+     */
+    private synchronized void updateUserInterfaceTitle(){
+        mState = getState();
+        Log.d(TAG, "Stage change: " + mNewState + " --> " + mState);
+        mNewState = mState;
+
+        mHandler.obtainMessage(Bluetooth_constants.MESSAGE_STATE_CHANGE, mNewState, -1).sendToTarget();
+    }
+
+    /**
         Write to the ConnectedThread in an un-synchronized manner
 
-        @param The bytes to write, out : byte[]
+        @param out, The bytes to write, out : byte[]
+        @see ConnectedThread#write(byte[])
      */
     public void write(byte[] out){
         // create temporary object
@@ -67,27 +83,48 @@ public class BlueTooth_service {
         r.write(out);
     }
 
-    public boolean checkOpenDoor(){
+    // public synchronized void start()
 
-        boolean open_flag = false;
-        // create temporary object
-        ConnectedThread r;
+    /**
+     * Stop all threads
+     */
+    public synchronized void stop(){
+        Log.d(TAG, "stop");
 
-        // synchronize a copy of the ConnectedThread
-        synchronized (this){
-            if(mState != STATE_CONNECTED){
-                return false;
-            }
-            r = mConnectedThread;
+        if(mConnectThread != null){
+            mConnectThread.cancel();
+            mConnectThread = null;
         }
-        // perform the write un-synchronized
-        open_flag = r.checkResponse();
-        return open_flag;
+
+        if (mConnectedThread != null){
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+
+        mState = STATE_NONE;
+
+        // could send message to activity to indicate
+    }
+
+    /**
+     * Indicate that the connection was lost and notify if neccessary
+     */
+    private void connectionLost(){
+        Message msg = mHandler.obtainMessage(Bluetooth_constants.MESSAGE_TOAST);
+        Bundle bundle = new Bundle();
+        bundle.putString(Bluetooth_constants.TOAST, "Device connection was lost");
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+
+        mState = STATE_NONE;
+
+        updateUserInterfaceTitle();
+
+        // can restart if want
     }
 
     // <BT initialize connection>
-
-    /*
+    /**
         Start the ConnectThread to initiate a connection to a remote device.
 
         @param: device to connect to : BluetoothDevice
@@ -114,92 +151,20 @@ public class BlueTooth_service {
         // Start the thread to connect with the given device
         mConnectThread = new BT_ConnectThread(device, dUUID);
         mConnectThread.start();
-    }
 
-    // The thread
-    private class BT_ConnectThread extends Thread{
-
-        private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
-
-        public BT_ConnectThread(BluetoothDevice device, UUID currUUID) {
-            BluetoothSocket tmp = null; // since mmSocket is final need a temp object.
-            mmDevice = device;
-
-            try {
-                // Get a bluetoothsocket to connect with the given bluetooth device, the UUID must match the one in the server code
-                tmp = device.createRfcommSocketToServiceRecord(currUUID); // on failure throws IOException
-            } catch (IOException e){
-                Log.v("TASK: ", "RFCOMM IO: " + e.toString());
-            }
-            mState = STATE_CONNECTING;
-            mmSocket = tmp; // on success
-        }
-
-        // thread
-        public void run(){
-            // cancel discovery is active
-            if(mBluetoothAdapter.isDiscovering()){
-                mBluetoothAdapter.cancelDiscovery();
-            }
-
-            try {
-                // try to connect to the remote device through the socket. This call blocks until it is successful or throws an exception, that's why we run this in a separate thread.
-                mmSocket.connect();
-            } catch (IOException connectException){
-                Log.v("TASK: ", "SOCKET could not make connection, IO: " + connectException.toString());
-                // it is unable to connect, have to close the socket and return
-                try {
-                    mmSocket.close();
-                } catch (IOException closeException){
-                    Log.v("TASK: ","SOCKET for client could not close, IO: " + closeException.toString());
-                }
-                return;
-
-            }
-
-            // If this section is reached then the connection attempt has succeeded. Perform work associated with the connection is a separate thread.
-            //manageMyConnectedSocket(mmSocket)
-            connected(mmSocket, mmDevice);
-        }
-
-        // manual close of client socket and causes the thread to finish.
-        public void cancel(){
-            try{
-                mmSocket.close();
-            } catch (IOException e){
-                Log.v("TASK: ", "SOCKET manual client closure failed, IO: " + e.toString());
-            }
-
-        }
-
+        // Could update activity
+        Log.d(TAG, "Initiating connection to: " + device.getName() + " with dev UUID of: " + device.getUuids() + " passed: "+ dUUID);
+        updateUserInterfaceTitle();
     }
     // </BT initialize connection>
 
-    public synchronized int getState(){
-        return mState;
-    }
+    // <BT Manage connection>
 
-    // update the caller class with the current state
-    private synchronized void updateCaller(){
-        mState = getState();
-        mNewState = mState;
-
-        // give the new state to the Handler so the caller can update
-        mHandler.obtainMessage(Bluetooth_constants.MESSAGE_STATE_CHANGE, mNewState, -1).sendToTarget();
-    }
-
-    private synchronized void doorOpenSuccess(){
-
-    }
-
-    // <Manage connection>
-
-    /*
-        Start the ConnectedThread to being managing a Bluetooth connection
-
-        @param: socket for the connection : BluetoothSocket
-        @param: device that is connected to : BLuetoothDevice
+    /**
+     * Start the ConnectedThread to begin managing a Bluetooth connection
+     *
+     * @param socket The BluetoothSocket on which the connection was made
+     * @param device The BluetoothDevice that has been connected
      */
     public synchronized  void connected(BluetoothSocket socket, BluetoothDevice device){
         Log.v("TASK: ", "BTS: Connected");
@@ -227,10 +192,82 @@ public class BlueTooth_service {
         msg.setData(bundle);
         mHandler.sendMessage(msg);
 
-        // Update caller class
-        // updateCaller();
+        // Update handler
+        updateUserInterfaceTitle();
     }
 
+    // </BT Manage connection>
+
+    // The thread to connect to the remote device
+
+    /**
+     * This thread runs while attempting to make an outgoing connection with a device.
+     *
+     */
+    private class BT_ConnectThread extends Thread{
+
+        private final BluetoothSocket mmSocket;
+        private final BluetoothDevice mmDevice;
+
+        public BT_ConnectThread(BluetoothDevice device, UUID currUUID) {
+            BluetoothSocket tmp = null; // since mmSocket is final need a temp object.
+            mmDevice = device;
+
+            try {
+                // Get a bluetoothsocket to connect with the given bluetooth device, the UUID must match the one in the server code
+                tmp = device.createRfcommSocketToServiceRecord(currUUID); // on failure throws IOException
+            } catch (IOException e){
+                Log.d(TAG, "RFCOMM IO error: " + e.toString());
+            }
+            mState = STATE_CONNECTING;
+            mmSocket = tmp; // on success
+        }
+
+        // thread
+        public void run(){
+            // cancel discovery is active
+            if(mBluetoothAdapter.isDiscovering()){
+                mBluetoothAdapter.cancelDiscovery();
+            }
+
+            Log.d(TAG, "BEGIN mConnectThread with " + mmDevice.getName());
+
+            try {
+                // try to connect to the remote device through the socket. This call blocks until it is successful or throws an exception, that's why we run this in a separate thread.
+                mmSocket.connect();
+            } catch (IOException connectException){
+                Log.d(TAG, "SOCKET could not make connection, IO: " + connectException.toString());
+                // it is unable to connect, have to close the socket and return
+                try {
+                    mmSocket.close();
+                } catch (IOException closeException){
+                    Log.d(TAG,"SOCKET for client could not close, IO: " + closeException.toString());
+                }
+                connectionLost();
+                return;
+
+            }
+
+            // If this section is reached then the connection attempt has succeeded. Perform work associated with the connection is a separate thread.
+            //manageMyConnectedSocket(mmSocket)
+            connected(mmSocket, mmDevice);
+        }
+
+        // manual close of client socket and causes the thread to finish.
+        public void cancel(){
+            try{
+                mmSocket.close();
+            } catch (IOException e){
+                Log.v("TASK: ", "SOCKET manual client closure failed, IO: " + e.toString());
+            }
+
+        }
+
+    }
+    // </BT initialize connection Thread>
+
+
+    // <Manage connection>
     // Thread
     private class ConnectedThread extends  Thread {
         private final BluetoothSocket mmSocket;
@@ -268,7 +305,7 @@ public class BlueTooth_service {
             int numBytes; // bytes returned from read()
 
             // Keep listening to the InputStream until exception occurs
-            while(true){
+            while(mState == STATE_CONNECTED){
                 try {
 
                     // ON CONNECTION, KEEP THIS IF ANDROID IS EXPECTING MESSAGE FROM REMOTE DEVICE WHEN IT CONNECTS
@@ -295,7 +332,7 @@ public class BlueTooth_service {
                 mmOutStream.write(bytes);
 
                 // Share the message with the UI activity
-                Message writtenMsg = mHandler.obtainMessage(Bluetooth_constants.MESSAGE_READ, -1, -1, mmBuffer);
+                Message writtenMsg = mHandler.obtainMessage(Bluetooth_constants.MESSAGE_WRITE, -1, -1, mmBuffer);
                 writtenMsg.sendToTarget();
 
             } catch (IOException e){
@@ -335,17 +372,6 @@ public class BlueTooth_service {
                 }
             }
             return buffer;
-        }
-
-        public boolean checkResponse(){
-
-            byte[] readMsg = read();
-
-            boolean open_flag = false;
-
-            // analyze the message to see if it indicates that the door was opened
-
-            return open_flag;
         }
 
         // call this method from the main activity to shut down the connection

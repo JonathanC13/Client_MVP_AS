@@ -2,8 +2,14 @@ package com.example.jonathan.client_mvp;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.DialogInterface;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -33,11 +39,16 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 
 import java.io.File;
+import java.util.Set;
 
 public class FloorActivity extends AppCompatActivity {
 
-    // Bluetooth
-    BlueTooth_test bt_test;
+
+    // Bluetooth discovery
+    private String mConnectedDeviceName = null;
+    private BlueTooth_service mTransferService = null;
+    BluetoothAdapter mBluetoothAdapter;
+    private PairedDevices Paired;
 
     private ImageView main_img;
     private Data_Controller dataPull;
@@ -57,6 +68,7 @@ public class FloorActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         dataPull = null;
+        Paired = new PairedDevices();
 
         String s_fail = "fail";
         String s_copyEmpty = "fail";
@@ -195,10 +207,10 @@ public class FloorActivity extends AppCompatActivity {
 
         // <Initial Bluetooth scan>
         // for test, only do the initial scan
-
+/*
         bt_test = new BlueTooth_test();
         String bt_log = bt_test.refreshBT();
-        /*
+
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setMessage(bt_log).setTitle("Current BT devices.")
                 // buttons
@@ -212,6 +224,7 @@ public class FloorActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
 */
+
         // </Initial Bluetooth scan>
 
         // Listeners below
@@ -305,7 +318,130 @@ public class FloorActivity extends AppCompatActivity {
         });
 
 
+        // BT adapter
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if(!mBluetoothAdapter.isEnabled() || mBluetoothAdapter == null){
+            // not enabled
+        } else {
+            // Register for broadcasts when a device is discovered
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            registerReceiver(mReceiver, filter);
+
+            Paired.pairedDevices = mBluetoothAdapter.getBondedDevices();
+
+            Paired.initializeDiscovery(mBluetoothAdapter);
+        }
+        String yeet = "";
+        if(Paired.pairedDevices.size() > 0){
+            //for (BluetoothDevice device : Paired.pairedDevices){
+              //  yeet += device.getName() + " : " + device.getAddress() + "\n";
+            //}
+            yeet = Paired.iterateBluetoothDevices(mBluetoothAdapter);
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage(yeet).setTitle("Current BT devices.")
+                // buttons
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
     }
+
+
+    // Create Handler that gets information back from the Bluetooth_service
+    private final Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg){
+            switch (msg.what){
+                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
+                    switch (msg.arg1) {
+                        case BlueTooth_service.STATE_CONNECTED:
+                            Log.v("TASK: ", "BT: Connected to: " + mConnectedDeviceName);
+                            //BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
+                            break;
+                        case BlueTooth_service.STATE_CONNECTING:
+                            Log.v("TASK: ", "BT: Connecting");
+                            break;
+                        case BlueTooth_service.STATE_LISTEN:
+                            // check next case
+                        case BlueTooth_service.STATE_NONE:
+                            Log.v("TASK: ", "BT: Not connected");
+                            break;
+
+                        default:
+                            break;
+
+                    }
+                    break;
+                case Bluetooth_constants.MESSAGE_WRITE:
+                    byte[] writeBuf = (byte[]) msg.obj;
+                    // construct a string from the valid bytes
+                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
+
+                    break;
+                case Bluetooth_constants.MESSAGE_READ:
+                    byte[] readBuf = (byte[])msg.obj;
+                    // construct a string from the valid bytes in the buffer
+                    // this is the response from the remote device
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+
+                    // todo, analyze the contents and determine what to do
+
+                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
+                    break;
+                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
+                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
+                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
+                    break;
+                case Bluetooth_constants.MESSAGE_TOAST:
+                    break;
+
+            }
+        }
+    };
+
+    // Sends message to the remote device
+    // @param message a string of text to send
+    private void sendMessage(String message){
+
+        // check if connection is active
+        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
+            Log.v("TASK: ", "BT: SendMessage fail due to not connected");
+            return;
+        }
+
+        // Check that there's actually something to send
+        if(message.length() > 0){
+            // Get the message bytes and tell the Bluetooth_service to write
+            byte[] send = message.getBytes();
+            mTransferService.write(send);
+
+        }
+    }
+    // <BT>
+
+    // Create a BroadcastReceiver for ACTION_FOUND
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if(BluetoothDevice.ACTION_FOUND.equals(action)){
+                // Discovery has found a device. Get the BluetoothDevice
+                // object and its info from the Intent (name and MAC)
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                String deviceName = device.getName();
+                String deviceHardwareAddress = device.getAddress(); // MAC Address
+            }
+        }
+    };
+
+    // </BT>
 
     public void refreshData(){
         // clear current doors to clean diaplay
@@ -313,7 +449,7 @@ public class FloorActivity extends AppCompatActivity {
             dataPull.clear_prev_doors(this);
         }
 
-        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale, bt_test, context);
+        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale, context, Paired, mBluetoothAdapter);
         DB_Controller DB_con_con = new DB_Controller(this, dataPull);
 
         Spinner s_items1 = (Spinner) findViewById(R.id.spn_lvls);

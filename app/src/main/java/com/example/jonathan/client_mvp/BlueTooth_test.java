@@ -31,7 +31,7 @@ public class BlueTooth_test extends Activity {
     Set<BluetoothDevice> pairedDevices; // query list for discovered bluetooth devices
 
     BlueTooth_test() {
-
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
     /*
@@ -46,7 +46,6 @@ public class BlueTooth_test extends Activity {
     public String refreshBT(){
 
         bt_log = "";
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         Log.v("TASK: ", "RES, START");
         if (mBluetoothAdapter == null) {
@@ -158,9 +157,18 @@ public class BlueTooth_test extends Activity {
                 }
             }
         }
-
-
         // </Query snippet>
+    }
+
+    public BluetoothDevice getDevice(String name){
+        BluetoothDevice foundDev = null;
+        for(BluetoothDevice discoveredDev : pairedDevices){
+            if (discoveredDev.getName() == name) {
+                foundDev = discoveredDev;
+                break;
+            }
+        }
+        return foundDev;
     }
 
     public UUID getUUID(BluetoothDevice dev){

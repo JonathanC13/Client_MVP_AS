@@ -1,8 +1,14 @@
 package com.example.jonathan.client_mvp;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -15,6 +21,7 @@ import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -34,19 +41,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import android.widget.RelativeLayout.LayoutParams;
-
+// todo 1.Check if connect and connected works. 2.need way to test read and write - Fill packet with valid data and send to a stub to print.
 public class Data_Controller {
-
-    // Bluetooth discovery
-    BlueTooth_test bt_test = new BlueTooth_test();
-    private BluetoothDevice mDevice = null;
-    private String mConnectedDeviceName = null;
-    private BlueTooth_service mTransferService = null;
-    private int BT_responseFlag = Bluetooth_constants.BT_OTHER;
 
     // <File system info>
     private String curr_app_dir;
@@ -76,12 +77,16 @@ public class Data_Controller {
 
     Context currContext;
 
-    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, BlueTooth_test bt, Context cont){
+    PairedDevices PairedSet;
+
+    BluetoothAdapter mBluetoothAdapter;
+
+    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, PairedDevices Paired, BluetoothAdapter mBluetoothAdapter){
+
+        this.mBluetoothAdapter = mBluetoothAdapter;
+        PairedSet = Paired;
 
         currContext = cont;
-
-        // shared discover object
-        bt_test = bt;
 
         grd_scr = grd_s;
         scale = IV_scale;
@@ -97,6 +102,7 @@ public class Data_Controller {
         //open_door_path = full_img_path + open_door;
 
     }
+
     
     public void resetFloorList(){
         flr_dr_class_list = new ArrayList<Data_Collection>();
@@ -306,60 +312,6 @@ public class Data_Controller {
 
     }
 
-    // Create Handler that gets information back from the Bluetooth_service
-    private final Handler mHandler = new Handler(){
-        @Override
-        public void handleMessage(Message msg){
-            switch (msg.what){
-                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
-                    switch (msg.arg1) {
-                        case BlueTooth_service.STATE_CONNECTED:
-                            Log.v("TASK: ", "BT: Connected to: " + mConnectedDeviceName);
-                            BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
-                            break;
-                        case BlueTooth_service.STATE_CONNECTING:
-                            Log.v("TASK: ", "BT: Connecting");
-                            break;
-                        case BlueTooth_service.STATE_LISTEN:
-                            // check next case
-                        case BlueTooth_service.STATE_NONE:
-                            Log.v("TASK: ", "BT: Not connected");
-                            break;
-
-                        default:
-                            break;
-
-                    }
-                    break;
-                case Bluetooth_constants.MESSAGE_WRITE:
-                    byte[] writeBuf = (byte[]) msg.obj;
-                    // construct a string from the valid bytes
-                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
-
-                    break;
-                case Bluetooth_constants.MESSAGE_READ:
-                    byte[] readBuf = (byte[])msg.obj;
-                    // construct a string from the valid bytes in the buffer
-                    // this is the response from the remote device
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-
-                    // todo, analyze the contents and determine what to do
-
-                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
-                    break;
-                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
-                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
-                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
-                    break;
-                case Bluetooth_constants.MESSAGE_TOAST:
-                    break;
-
-            }
-        }
-    };
-
-
-
     private void generic_button_click(View v ) {
 
         final ImageButton IB = (ImageButton) v;
@@ -397,9 +349,40 @@ public class Data_Controller {
             }
         }, 5000);
 
+        // BT CONNECT TEST
 
 
 
+        String device_name = "123";
+        UUID currUUID = null;
+
+// todo, NOW WORKS ?????? SO DO THE CONNECTION TEST SATURDAY
+        // WTF COME ON
+        Log.v("TASK: ", "WHAT IS HAPPENING");
+        BluetoothDevice fndDev = PairedSet.log(device_name);
+        BluetoothAdapter mmBA = BluetoothAdapter.getDefaultAdapter();
+        currUUID = PairedSet.getUUID(fndDev, mmBA);
+
+        Log.v("TASK: ", "FOUND IT: " + fndDev.getName() + " : " + currUUID.toString());
+
+/*
+        BluetoothDevice foundDevice = bt_test.getDevice(device_name);
+        if(foundDevice != null){
+            //currUUID = bt_test.getUUID(foundDevice);
+        }
+
+        Log.v("TASK: ", "UUID: " + foundDevice.getName().toString());
+  */
+        /*
+        // Initialize service to perform the bluetooth connection
+        mTransferService = new BlueTooth_service(currContext, mHandler); // The door image will be updated based on response of remote device
+
+        // Connect to the remote device
+        mTransferService.connect(mDevice, currUUID);
+        */
+
+
+/*
         // <Bluetooth connection>
         // get the device name
         mConnectedDeviceName = "";
@@ -442,7 +425,7 @@ public class Data_Controller {
                 Log.v("TASK: ", "uuid found: " + currUUID.toString());
 
                 // Initialize service to perform the bluetooth connection
-                mTransferService = new BlueTooth_service(currContext, mHandler, IB); // The door image will be updated based on response of remote device
+                mTransferService = new BlueTooth_service(currContext, mHandler); // The door image will be updated based on response of remote device
 
                 // Connect to the remote device
                 mTransferService.connect(mDevice, currUUID);
@@ -461,31 +444,14 @@ public class Data_Controller {
             // total failure.
             Log.v("TASK: ", "Total failure");
         }
-
+*/
 
         // </Bluetooth connection>
 
 
     }
 
-    // Sends message to the remote device
-    // @param message a string of text to send
-    private void sendMessage(String message){
 
-        // check if connection is active
-        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
-            Log.v("TASK: ", "BT: SendMessage fail due to not connected");
-            return;
-        }
-
-        // Check that there's actually something to send
-        if(message.length() > 0){
-            // Get the message bytes and tell the Bluetooth_service to write
-            byte[] send = message.getBytes();
-            mTransferService.write(send);
-
-        }
-    }
 
     public String getFullImgPath(){
         return full_img_path;
