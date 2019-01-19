@@ -1,5 +1,6 @@
 package com.example.jonathan.client_mvp;
 
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -17,13 +18,24 @@ import java.net.UnknownHostException;
 
 public class UDP_controller {
 
-    private InetAddress remoteAddress;
-    private int remotePort;
+    // IP to RPi
+    private char[] remoteAddress = null;
+
+    // Port open on that Pi, a constant that the developers need to know to hard code
+    private static char[] remotePort = null;
+
+    // device name ?? . Need to set this
+    private char[] deviceName = null;
+
+    // card id of the employee;
+    private char[] employee_id_toSend = null;
 
     public int success = -1;
-    public UDP_controller(String IP){
+    public UDP_controller(String IP, String em_id){
         try {
-            this.remoteAddress = InetAddress.getByName(IP);
+            InetAddress remoteAddressIP = InetAddress.getByName(IP);
+            this.remoteAddress.toString().toCharArray();
+            this.employee_id_toSend = em_id.toCharArray();
 
         } catch (UnknownHostException e){
 
@@ -32,7 +44,8 @@ public class UDP_controller {
 
     public int executeUDP(){
         try {
-            Object obj = new ReqPi().execute().get(); // this thread waits for response
+            int ret_Succ = new ReqPi().execute().get(); // this thread waits for response
+            success = ret_Succ;
         } catch (Exception e){
 
         }
@@ -40,16 +53,17 @@ public class UDP_controller {
         return success;
     }
 
-    private class ReqPi extends AsyncTask<Void, Void, Void> {
+    private class ReqPi extends AsyncTask<Void, Void, Integer> {
 
         public void ReqPi() {
         }
 
-        protected Void doInBackground(Void... args) {
+        protected Integer doInBackground(Void... args) {
 
             AccessRequest AR = new AccessRequest();
-            //AR.send_request();
-            return null;
+            int successflag = AR.send_request(remoteAddress, remotePort, deviceName, employee_id_toSend);
+            return successflag;
+
         }
         protected void onPostExecute(String file_url) {
 

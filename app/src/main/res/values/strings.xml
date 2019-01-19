@@ -13,7 +13,7 @@
     <string name="userlabel">Username</string>
     <string name="passlabel">Password</string>
     <string name="autolog">Auto sign in</string>
-    <string name="card">Card</string>
+    <string name="card">Card_id</string>
     <string name="sign_in">Sign in</string>
 
     <!-- url strings -->

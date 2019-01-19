@@ -73,24 +73,25 @@ public class PairedDevices {
     }
 
     public UUID getUUID(BluetoothDevice dev, BluetoothAdapter mBluetoothAdapter){
-
-        // check if discovering
-        if(mBluetoothAdapter.isDiscovering()){
-            mBluetoothAdapter.cancelDiscovery();
-        }
-        // request the UUID from the device
-        boolean res = dev.fetchUuidsWithSdp();
-        ParcelUuid[] uuidExtra = dev.getUuids();
         UUID currUUID = null;
+        if (dev != null) {
+            // check if discovering
+            if (mBluetoothAdapter.isDiscovering()) {
+                mBluetoothAdapter.cancelDiscovery();
+            }
+            // request the UUID from the device
+            boolean res = dev.fetchUuidsWithSdp();
+            ParcelUuid[] uuidExtra = dev.getUuids();
 
-        for(ParcelUuid uuid : uuidExtra){
-            currUUID = uuid.getUuid();
+
+            for (ParcelUuid uuid : uuidExtra) {
+                currUUID = uuid.getUuid();
+            }
+
+            if (currUUID == null) {
+                Log.v("TASK: ", "UUID< NULL");
+            }
         }
-
-        if(currUUID == null){
-            Log.v("TASK: ", "UUID< NULL");
-        }
-
         return currUUID;
     }
 }

@@ -30,6 +30,10 @@ public class BlueTooth_service {
     private int mNewState;
     private UUID mUUID;
 
+    //private static final UUID MY_UUID_SECURE = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+    //private static final UUID MY_UUID_SECURE = UUID.fromString("00001112-0000-1000-8000-00805f9b34fb"); tab as server
+    private static final UUID MY_UUID_SECURE = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
+
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;         // doing noting
     public static final int STATE_LISTEN = 1;       // now listening for incoming connection
@@ -153,7 +157,7 @@ public class BlueTooth_service {
         mConnectThread.start();
 
         // Could update activity
-        Log.d(TAG, "Initiating connection to: " + device.getName() + " with dev UUID of: " + device.getUuids() + " passed: "+ dUUID);
+        Log.d(TAG, "Initiating connection to: " + device.getName() + " with dev UUID of: " + device.getUuids().toString() + " passed: "+ dUUID);
         updateUserInterfaceTitle();
     }
     // </BT initialize connection>
@@ -213,9 +217,13 @@ public class BlueTooth_service {
             BluetoothSocket tmp = null; // since mmSocket is final need a temp object.
             mmDevice = device;
 
+            UUID currUUIDNEW = device.getUuids()[0].getUuid();
+            //Log.v(TAG, "THE UUID IS " + currUUID.toString() + " .OTHER: " + device.getUuids()[0].getUuid());
+            Log.v(TAG, "THE UUID IS " + MY_UUID_SECURE);
             try {
                 // Get a bluetoothsocket to connect with the given bluetooth device, the UUID must match the one in the server code
-                tmp = device.createRfcommSocketToServiceRecord(currUUID); // on failure throws IOException
+                tmp = device.createRfcommSocketToServiceRecord(MY_UUID_SECURE); // on failure throws IOException
+
             } catch (IOException e){
                 Log.d(TAG, "RFCOMM IO error: " + e.toString());
             }
@@ -236,8 +244,10 @@ public class BlueTooth_service {
                 // try to connect to the remote device through the socket. This call blocks until it is successful or throws an exception, that's why we run this in a separate thread.
                 mmSocket.connect();
             } catch (IOException connectException){
+
                 Log.d(TAG, "SOCKET could not make connection, IO: " + connectException.toString());
                 // it is unable to connect, have to close the socket and return
+
                 try {
                     mmSocket.close();
                 } catch (IOException closeException){
@@ -247,6 +257,10 @@ public class BlueTooth_service {
                 return;
 
             }
+
+            synchronized (BlueTooth_service.this){{
+                mConnectThread = null;
+            }}
 
             // If this section is reached then the connection attempt has succeeded. Perform work associated with the connection is a separate thread.
             //manageMyConnectedSocket(mmSocket)

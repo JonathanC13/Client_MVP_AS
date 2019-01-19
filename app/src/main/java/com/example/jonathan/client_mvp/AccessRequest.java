@@ -239,6 +239,9 @@ public class AccessRequest {
                     {
                         case CMD_OK:    // cmd 0
                             Log.v("TASK: ", "udp_buf CMD_OK received: " + out_qdata.msg.getBody() + ": with " + received_bytes + " bytes.");
+                            // THis command meaning request accepted and door open?
+                            //transferSocket.close();
+                            // return 0;
                             break;
                         case CMD_ERROR_ID_IDCOMPL_NOT_MATCH:
                             Log.v("TASK: ", "udp_buf CMD_ERROR_REMOTE_ACCESS_DENIED received: " + out_qdata.msg.getBody() + ": with " + received_bytes + " bytes.");
@@ -271,7 +274,7 @@ public class AccessRequest {
             return -11;
         }
         transferSocket.close();
-        return 0;
+        return 1; // message received had no error but request rejected?
     }
 
     public int to_char_buf(byte[] qu_msg, AR_csys_msg udp_msg){

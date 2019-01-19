@@ -355,76 +355,7 @@ public class FloorActivity extends AppCompatActivity {
     }
 
 
-    // Create Handler that gets information back from the Bluetooth_service
-    private final Handler mHandler = new Handler(){
-        @Override
-        public void handleMessage(Message msg){
-            switch (msg.what){
-                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
-                    switch (msg.arg1) {
-                        case BlueTooth_service.STATE_CONNECTED:
-                            Log.v("TASK: ", "BT: Connected to: " + mConnectedDeviceName);
-                            //BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
-                            break;
-                        case BlueTooth_service.STATE_CONNECTING:
-                            Log.v("TASK: ", "BT: Connecting");
-                            break;
-                        case BlueTooth_service.STATE_LISTEN:
-                            // check next case
-                        case BlueTooth_service.STATE_NONE:
-                            Log.v("TASK: ", "BT: Not connected");
-                            break;
 
-                        default:
-                            break;
-
-                    }
-                    break;
-                case Bluetooth_constants.MESSAGE_WRITE:
-                    byte[] writeBuf = (byte[]) msg.obj;
-                    // construct a string from the valid bytes
-                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
-
-                    break;
-                case Bluetooth_constants.MESSAGE_READ:
-                    byte[] readBuf = (byte[])msg.obj;
-                    // construct a string from the valid bytes in the buffer
-                    // this is the response from the remote device
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-
-                    // todo, analyze the contents and determine what to do
-
-                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
-                    break;
-                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
-                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
-                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
-                    break;
-                case Bluetooth_constants.MESSAGE_TOAST:
-                    break;
-
-            }
-        }
-    };
-
-    // Sends message to the remote device
-    // @param message a string of text to send
-    private void sendMessage(String message){
-
-        // check if connection is active
-        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
-            Log.v("TASK: ", "BT: SendMessage fail due to not connected");
-            return;
-        }
-
-        // Check that there's actually something to send
-        if(message.length() > 0){
-            // Get the message bytes and tell the Bluetooth_service to write
-            byte[] send = message.getBytes();
-            mTransferService.write(send);
-
-        }
-    }
     // <BT>
 
     // Create a BroadcastReceiver for ACTION_FOUND
