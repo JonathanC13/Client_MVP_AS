@@ -27,6 +27,7 @@ public class AR_net_info {
     }
 
     public void setServer_ipv4(char[] p_IPV4, int size){
+        server_ipv4 = new char[size];
         System.arraycopy(p_IPV4, 0, server_ipv4, 0, size);
     }
 

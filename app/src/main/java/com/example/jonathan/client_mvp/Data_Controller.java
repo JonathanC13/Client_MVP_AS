@@ -348,9 +348,10 @@ public class Data_Controller {
         if (employeeCard.equals(sp_fail)){ }
         else {
             // udp send to open door and wait for receive message
+            Log.v("UDPSEND: ", "START");
             UDP_controller udpTask = new UDP_controller(button_IP, employeeCard);
             int response = udpTask.executeUDP(); // Starts async task for udp operation
-
+            Log.v("UDPSEND: ", "UDP response: " + response);
             // need to determine success code
             if(response == 0){
                 // change door icon to green

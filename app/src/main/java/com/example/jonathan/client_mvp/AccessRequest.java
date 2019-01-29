@@ -24,6 +24,7 @@ public class AccessRequest {
     // --- cmd numbers ---
     // unicast commands
     private static final int UNICAST_BASE_CMD = 4096;
+    private static final int UNICAST_ACC_REQ_CMD = 4099;
     private static final int CMD_OK = (0 + UNICAST_BASE_CMD);
 
     private static final int CMD_DEV_SEND_PLAIN_ID = (3 + UNICAST_BASE_CMD);
@@ -53,6 +54,12 @@ public class AccessRequest {
     private static final int IDX_BCNT = 24;
     private static final int IDX_BODY = 28;
 
+    // for body
+    private static final int IDX_RN = 0;
+    private static final int IDX_DN = 4;
+    private static final int IDX_CN = 132;
+    private static final int IDX_1CN = 196;
+
     public AccessRequest(){
 
     }
@@ -66,14 +73,50 @@ public class AccessRequest {
     // body_send_plain_id: needed
         // all
 
+    public int test_request(String ip, String device_name,int port, String card_id){
+
+        String s_senderIP = "";
+        try {
+            s_senderIP = InetAddress.getLocalHost().getHostAddress();
+
+        } catch (UnknownHostException e){
+
+        }
+        Log.v("PACKET: ", "LOCAL IP: " + s_senderIP);
+
+        AccReq_Header AR_header = new AccReq_Header(MSG_HEADER_SIZE);
+        AR_header.setCmd(IDX_CMD, UNICAST_ACC_REQ_CMD);
+        AR_header.setSenderDeviceAddr(IDX_SRCBRD, s_senderIP, 69);
+        AR_header.setDestDeviceAddr(IDX_DESTBRD, "192.168.2.20", 69);
+        AR_header.setMsgSequenceNum(IDX_SEQ, 0);
+        AR_header.setMsgSignature(IDX_SIGN);
+        AR_header.setTimeStamp(IDX_TSTAMP);
+        //AR_header.setBodyByteCount(IDX_BCNT, 260);
+
+
+        AccReq_Body AR_body = new AccReq_Body(MAX_MSG_BODY_SIZE);
+        AR_body.setRandomNum(IDX_RN);
+        AR_body.setDevName(IDX_DN, "RDR2, C3:IO:R2");
+        AR_body.setCardNum(IDX_CN, "41165377");
+        AR_body.set1CompCardNum(IDX_1CN);
+
+        AR_body.printBody();
+
+        // ==
+        AR_header.setBodyByteCount(IDX_BCNT, AR_body.getBodySize());
+        AR_header.printHeader();
+
+        return 1;
+    }
+
     public int send_request(char[] p_IPv4, char[] p_port, char[] p_device_name, char[] p_card_id){
 
         Log.v("TASK: ", "send_request: Starting ===");
         Log.v("TASK: ", "send_request: <parameters> ---");
-        Log.v("TASK: ", "send_request: p_IPv4: " + p_IPv4);
-        Log.v("TASK: ", "send_request: p_port: " + p_port);
-        Log.v("TASK: ", "send_request: p_device_name: " + p_device_name);
-        Log.v("TASK: ", "send_request: p_card_id: " + p_card_id);
+        Log.v("TASK: ", "send_request: p_IPv4: " + p_IPv4.toString());
+        Log.v("TASK: ", "send_request: p_port: " + p_port.toString());
+        Log.v("TASK: ", "send_request: p_device_name: " + p_device_name.toString());
+        Log.v("TASK: ", "send_request: p_card_id: " + p_card_id.toString());
         Log.v("TASK: ", "send_request: </parameters> ---");
 
         AR_csys_unicast_qdata uc_qdata = new AR_csys_unicast_qdata(MAX_MSG_BODY_SIZE, IPV4_LEN);
@@ -85,7 +128,7 @@ public class AccessRequest {
         msg_body.zeroAll();
 
         msg_body.setRandom_num(0x12345678);
-        msg_body.setDevice_name(p_device_name, SIM_DEV_NAME_SIZE);
+        msg_body.setDevice_name(p_device_name, SIM_DEV_NAME_SIZE); //SIM_DEV_NAME_SIZE
 
         char[] p_dst_straight = msg_body.getData_straight_text();
         char[] p_dst_compl = msg_body.getData_complement_text();
@@ -95,12 +138,14 @@ public class AccessRequest {
                 p_dst_straight[j] = p_card_id[i];
                 p_dst_compl[j] = (char) (~(p_card_id[i]));
                 j ++;
+            } else {
+                break;
             }
         }
 
         Log.v("TASK: ", "send_request: <copy> ---");
-        Log.v("TASK: ", "send_request: p_dst_straight: " + p_dst_straight);
-        Log.v("TASK: ", "send_request: p_dst_compl: " + p_dst_compl);
+        Log.v("TASK: ", "send_request: p_dst_straight: " + p_dst_straight.toString());
+        Log.v("TASK: ", "send_request: p_dst_compl: " + p_dst_compl.toString());
         Log.v("TASK: ", "send_request: </copy> ---");
 
         uc_qdata.zeroAll();
@@ -133,12 +178,14 @@ public class AccessRequest {
         uc_qdata.send_tinf.setThread_id(0);
 
         //IP address
-        uc_qdata.svr_net_info.setServer_ipv4(p_IPv4, IPV4_LEN + 1);
+        int IPLEN = p_IPv4.length;
+        uc_qdata.svr_net_info.setServer_ipv4(p_IPv4, IPLEN); // IPV4_LEN + 1
         String s_port = new String(p_port);
         uc_qdata.svr_net_info.setServer_port(Integer.parseInt(s_port));
 
         String s_server = new String(uc_qdata.svr_net_info.getServer_ipv4());
-        Log.v("TASK: ", "send_request: svr_net_info server: " + s_server);
+
+        Log.v("TASK: ", "send_request: svr_net_info server: " + s_server); // ignore trailing 0
         Log.v("TASK: ", "send_request: svr_net_info port: " + uc_qdata.svr_net_info.getServer_port());
         Log.v("TASK: ", "send_request: </uc_qdata> ---");
 
@@ -183,11 +230,13 @@ public class AccessRequest {
                 return -9;
             }
 
-            Log.v("TASK: ", "unicast_udp_send: </out_qdata> ---" );
+            Log.v("UDPSEND: ", "unicast_udp_send: </out_qdata> ---" );
 
             // debug dump
+            Log.v("UDPSEND ", "Packet length of: " + ch_cnt);
+            Log.v("UDPSEND: ", udp_buf.toString());
 
-
+            /*
             DatagramPacket packet = new DatagramPacket(udp_buf, ch_cnt, remoteaddr, remote_port);
             try {
                 transferSocket.send(packet);
@@ -262,15 +311,16 @@ public class AccessRequest {
                 out_qdata.send_tinf.setRet_value(-8);
                 return out_qdata.send_tinf.getRet_value();
             }
-
+        */
         } catch (SocketException e){
             // could not open a socket
             out_qdata.send_tinf.setRet_value(-1);
+            Log.v("UDPSEND: ", "could not open socket : " + e);
             return -1;
             // return -3;
         } catch (UnknownHostException e){
             // host not valid
-
+            Log.v("UDPSEND: ", "unknown host: " + e);
             return -11;
         }
         transferSocket.close();
@@ -289,15 +339,15 @@ public class AccessRequest {
         //get char array
         char[] ch = buffer.toString().toCharArray();
 
-        System.arraycopy(udp_msg.head.getCmd(), 0, ch, IDX_CMD, 4);
-        System.arraycopy(udp_msg.head.getMbrd_addr(), 0, ch, IDX_SRCBRD, 4);
-        System.arraycopy(udp_msg.head.getDest_addr(), 0, ch, IDX_DESTBRD, 4);
-        System.arraycopy(udp_msg.head.getSequence(), 0, ch, IDX_SEQ, 4);
-        System.arraycopy(udp_msg.head.getSignature(), 0, ch, IDX_SIGN, 4);
-        System.arraycopy(udp_msg.head.getTimestamp(), 0, ch, IDX_TSTAMP, 4);
+        System.arraycopy(udp_msg.head.getCmd(), 0, ch, IDX_CMD, udp_msg.head.getCmd().length);     // i2: 4
+        System.arraycopy(udp_msg.head.getMbrd_addr(), 0, ch, IDX_SRCBRD, udp_msg.head.getMbrd_addr().length);
+        System.arraycopy(udp_msg.head.getDest_addr(), 0, ch, IDX_DESTBRD, udp_msg.head.getDest_addr().length);
+        System.arraycopy(udp_msg.head.getSequence(), 0, ch, IDX_SEQ, udp_msg.head.getSequence().length);
+        System.arraycopy(udp_msg.head.getSignature(), 0, ch, IDX_SIGN, udp_msg.head.getSignature().length);
+        System.arraycopy(udp_msg.head.getTimestamp(), 0, ch, IDX_TSTAMP, udp_msg.head.getTimestamp().length);
 
         if(udp_msg.head.getBody_bytecount() < MAX_MSG_BODY_SIZE){
-            System.arraycopy(udp_msg.head.getBody_bytecount(),0, ch, IDX_BCNT, 4);
+            System.arraycopy(udp_msg.head.getBody_bytecountCHAR(),0, ch, IDX_BCNT, udp_msg.head.getBody_bytecountCHAR().length); //i2: 4
             System.arraycopy(udp_msg.getBody(), 0, ch, IDX_BODY, udp_msg.head.getBody_bytecount());
 
             String s_ch = new String(ch);

@@ -68,7 +68,7 @@ public class FloorActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         dataPull = null;
-        Paired = new PairedDevices();
+        //Paired = new PairedDevices();
 
         String s_fail = "fail";
         String s_copyEmpty = "fail";
@@ -319,6 +319,7 @@ public class FloorActivity extends AppCompatActivity {
 
 
         // BT adapter
+        /*
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(!mBluetoothAdapter.isEnabled() || mBluetoothAdapter == null){
             // not enabled
@@ -351,7 +352,7 @@ public class FloorActivity extends AppCompatActivity {
 
         AlertDialog dialog = builder.create();
         dialog.show();
-
+        */
     }
 
 

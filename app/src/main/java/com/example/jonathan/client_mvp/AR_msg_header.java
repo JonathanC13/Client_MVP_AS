@@ -41,48 +41,63 @@ public class AR_msg_header {
         this.cmd = cmd;
     }
 
-    public int getCmd() {
-        return cmd;
+    public char[] getCmd() {
+
+        char[] c_cmd = ("" + cmd).toCharArray();
+
+        return c_cmd;
     }
 
     public void setMbrd_addr(int mbrd_addr) {
         this.mbrd_addr = mbrd_addr;
     }
 
-    public int getMbrd_addr() {
-        return mbrd_addr;
+    public char[] getMbrd_addr() {
+        char[] c_mbrd_addr = ("" + mbrd_addr).toCharArray();
+
+        return c_mbrd_addr;
     }
 
     public void setDest_addr(int dest_addr) {
         this.dest_addr = dest_addr;
     }
 
-    public int getDest_addr() {
-        return dest_addr;
+    public char[] getDest_addr() {
+        char[] c_dest_addr = ("" + dest_addr).toCharArray();
+
+        return c_dest_addr;
     }
 
     public void setSequence(int sequence) {
         this.sequence = sequence;
     }
 
-    public int getSequence() {
-        return sequence;
+    public char[] getSequence() {
+        char[] c_sequence = ("" + sequence).toCharArray();
+
+        return c_sequence;
+
     }
 
     public void setSignature(int signature) {
         this.signature = signature;
     }
 
-    public int getSignature() {
-        return signature;
+    public char[] getSignature() {
+        char[] c_signature = ("" + signature).toCharArray();
+
+        return c_signature;
+
     }
 
     public void setTimestamp(int timestamp) {
         this.timestamp = timestamp;
     }
 
-    public int getTimestamp() {
-        return timestamp;
+    public char[] getTimestamp() {
+        char[] c_timestamp = ("" + timestamp).toCharArray();
+
+        return c_timestamp;
     }
 
     public void setBody_bytecount(int body_bytecount) {
@@ -91,6 +106,12 @@ public class AR_msg_header {
 
     public int getBody_bytecount() {
         return body_bytecount;
+    }
+
+    public char[] getBody_bytecountCHAR(){
+        char[] c_body_bytecount = ("" + body_bytecount).toCharArray();
+
+        return c_body_bytecount;
     }
 
 }

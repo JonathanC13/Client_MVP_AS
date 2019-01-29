@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class AR_body_send_plain_id {
 
-    private int random_num; // for integrity check, 4-byte integer in text
+    private char[] random_num; // for integrity check, 4-byte integer in text
     private char[] device_name;
     private char[] data_straight_text;
     private char[] data_complement_text;
@@ -19,7 +19,8 @@ public class AR_body_send_plain_id {
     }
 
     public void zeroAll(){
-        this.random_num = 0;
+        //this.random_num = 0;
+
         Arrays.fill(this.device_name, '0');
         Arrays.fill(this.data_straight_text, '0');
         Arrays.fill(this.data_complement_text, '0');
@@ -27,34 +28,47 @@ public class AR_body_send_plain_id {
 
     public int getSizeof(){
         int total = 0;
-        int intSize = random_num * Integer.BYTES;
-        total = intSize + (this.device_name.length * Character.BYTES) + (this.data_straight_text.length * Character.BYTES) + (this.data_complement_text.length * Character.BYTES);
+        //int intSize = String.valueOf(random_num).length() * Integer.BYTES;
+        //int intSize = this.random_num.length * Character.BYTES;
+        //total = intSize + (this.device_name.length * Character.BYTES) + (this.data_straight_text.length * Character.BYTES) + (this.data_complement_text.length * Character.BYTES);
+        total = this.random_num.length + (this.device_name.length) + (this.data_straight_text.length) + (this.data_complement_text.length);
         return total;
     }
 
-    public void setRandom_num(int random_num) {
-        this.random_num = random_num;
+    public void setRandom_num(int i_random_num) {
+        random_num = ("" + i_random_num).toCharArray();
+
     }
 
-    public int getRandom_num() {
+    public char[] getRandom_num() {
         return random_num;
     }
 
     public int getRandom_numSize(){
-        //return Integer.BYTES; // need API 24 +
-        return getSize.get_sizeOf(int.class);
+        //return Integer.BYTES;
+        //int intSize = String.valueOf(random_num).length() * Integer.BYTES;
+        //return (random_num.length * Character.BYTES);
+        return (random_num.length);
+
     }
     public int getDevice_nameSize(){
         //return device_name.length * Character.BYTES;
-        return (device_name.length * getSize.get_sizeOf(char.class));
+        //return (device_name.length * getSize.get_sizeOf(char.class));
+
+        //return (device_name.length * Character.BYTES);
+        return (device_name.length);
     }
     public int getDataStraightSize(){
         //return data_straight_text.length * Character.BYTES;
-        return (data_straight_text.length * getSize.get_sizeOf(char.class));
+        //return (data_straight_text.length * getSize.get_sizeOf(char.class));
+        //return (data_straight_text.length * Character.BYTES);
+        return (data_straight_text.length);
     }
     public int getDataComplSize(){
         //return data_complement_text.length * Character.BYTES;
-        return (data_complement_text.length * getSize.get_sizeOf(char.class));
+        //return (data_complement_text.length * getSize.get_sizeOf(char.class));
+        //return (data_complement_text.length * Character.BYTES);
+        return (data_complement_text.length);
     }
 
     public void setDevice_name(char[] device_name, int SIM_DEV_NAME_SIZE) {
