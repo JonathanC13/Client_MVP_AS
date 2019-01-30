@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 public class AccessRequest {
 
-    private static final int MAX_MSG_BODY_SIZE = 768;
+//    private static final int MAX_MSG_BODY_SIZE = 768;
     private static final int IPV4_LEN = 15;
 
     private static final int SIM_ID_BYTE_SIZE = 64;
@@ -23,7 +23,7 @@ public class AccessRequest {
 
     // --- cmd numbers ---
     // unicast commands
-    private static final int UNICAST_BASE_CMD = 4096;
+    /*private static final int UNICAST_BASE_CMD = 4096;
     private static final int UNICAST_ACC_REQ_CMD = 4099;
     private static final int CMD_OK = (0 + UNICAST_BASE_CMD);
 
@@ -37,14 +37,15 @@ public class AccessRequest {
     private static final int CMD_ERROR = (0 + ERROR_BASE_CMD);
     private static final int CMD_ERROR_ID_IDCOMPL_NOT_MATCH = (1 + ERROR_BASE_CMD);
     private static final int CMD_ERROR_REMOTE_ACCESS_DENIED = (2 + ERROR_BASE_CMD);
-
+    */
     // -- message --
     private static final int MAX_UDP_MSGSIZE = 1024;
 
-    private static final int MSG_HEADER_SIZE = 28;
-    private static final int MAX_QU_MSG_BODY_SIZE = (MAX_UDP_MSGSIZE - MSG_HEADER_SIZE);
+    //private static final int MSG_HEADER_SIZE = 28;
+    //private static final int MAX_QU_MSG_BODY_SIZE = (MAX_UDP_MSGSIZE - MSG_HEADER_SIZE);
 
-    //queue buffer index for copying.
+    //queue buffer index for copying to header.
+    /*
     private static final int IDX_CMD = 0;
     private static final int IDX_SRCBRD = 4;
     private static final int IDX_DESTBRD = 8;
@@ -54,11 +55,18 @@ public class AccessRequest {
     private static final int IDX_BCNT = 24;
     private static final int IDX_BODY = 28;
 
-    // for body
+    //queue buffer index for copying to body.
     private static final int IDX_RN = 0;
     private static final int IDX_DN = 4;
     private static final int IDX_CN = 132;
     private static final int IDX_1CN = 196;
+    */
+
+    private static final int CMD_OK = 4096;
+    private static final int CMD_ERROR_ID_IDCOMPL_NOT_MATCH = 8193;
+    private static final int CMD_ERROR_REMOTE_ACCESS_DENIED = 8194;
+
+    DatagramSocket transferSocket;
 
     public AccessRequest(){
 
@@ -73,42 +81,81 @@ public class AccessRequest {
     // body_send_plain_id: needed
         // all
 
-    public int test_request(String ip, String device_name,int port, String card_id){
+    public int test_request(String dest_ip, String dest_device_name, int dest_port, String card_id){
 
-        String s_senderIP = "";
-        try {
-            s_senderIP = InetAddress.getLocalHost().getHostAddress();
+        AccReq_CreateReqPacket o_AccessReq = new AccReq_CreateReqPacket(dest_ip, dest_device_name, dest_port, card_id);
+        byte[] accessRequestMsg = o_AccessReq.getReqMsg();
 
-        } catch (UnknownHostException e){
-
-        }
-        Log.v("PACKET: ", "LOCAL IP: " + s_senderIP);
-
-        AccReq_Header AR_header = new AccReq_Header(MSG_HEADER_SIZE);
-        AR_header.setCmd(IDX_CMD, UNICAST_ACC_REQ_CMD);
-        AR_header.setSenderDeviceAddr(IDX_SRCBRD, s_senderIP, 69);
-        AR_header.setDestDeviceAddr(IDX_DESTBRD, "192.168.2.20", 69);
-        AR_header.setMsgSequenceNum(IDX_SEQ, 0);
-        AR_header.setMsgSignature(IDX_SIGN);
-        AR_header.setTimeStamp(IDX_TSTAMP);
-        //AR_header.setBodyByteCount(IDX_BCNT, 260);
+        // excluded right nnow is the thread info
+        return this.unicast_udp_AR_transfer(accessRequestMsg, dest_ip, dest_port, 10);
 
 
-        AccReq_Body AR_body = new AccReq_Body(MAX_MSG_BODY_SIZE);
-        AR_body.setRandomNum(IDX_RN);
-        AR_body.setDevName(IDX_DN, "RDR2, C3:IO:R2");
-        AR_body.setCardNum(IDX_CN, "41165377");
-        AR_body.set1CompCardNum(IDX_1CN);
-
-        AR_body.printBody();
-
-        // ==
-        AR_header.setBodyByteCount(IDX_BCNT, AR_body.getBodySize());
-        AR_header.printHeader();
-
-        return 1;
     }
 
+    public int unicast_udp_AR_transfer(byte[] sendPacket, String dest_ip, int dest_port, int timedout_sec) {
+
+        InetAddress myaddr, remoteaddr;
+
+        try {
+            remoteaddr = InetAddress.getByName(dest_ip);
+            transferSocket = new DatagramSocket();
+
+            DatagramPacket packet_send = new DatagramPacket(sendPacket, sendPacket.length, remoteaddr, dest_port);
+            //transferSocket.send(packet_send); for test comment out
+            transferSocket.close();
+        } catch (IOException e){
+            transferSocket.close();
+            Log.v("ACCESS_REQ: ", "SEND IOException: " + e.toString());
+            return -1;
+        }
+
+        // for receive
+        byte[] receiveBuffer = new byte[MAX_UDP_MSGSIZE];
+        Arrays.fill(receiveBuffer, (byte) 0);
+        try {
+            DatagramPacket packet_receive = new DatagramPacket(receiveBuffer, MAX_UDP_MSGSIZE);
+            transferSocket.receive(packet_receive);
+            int packetLen = packet_receive.getLength();
+            // // packet.getData and packet.getLength
+            AccReq_AnalyzeResponse AR_AR = new AccReq_AnalyzeResponse(receiveBuffer, packetLen);
+            int cmdCode = AR_AR.checkCmdSegment();
+
+            AccReq_Body AR_B = new AccReq_Body(receiveBuffer);
+
+            switch(cmdCode) // based on the message command, create a return message and send it
+            {
+                case CMD_OK:    // cmd 4096
+                    Log.v("RESPONSE: ", "udp_buf CMD_OK received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
+                    // THis command meaning request accepted and door open?
+                    transferSocket.close();
+                    return 1;
+
+                case CMD_ERROR_ID_IDCOMPL_NOT_MATCH:
+                    Log.v("RESPONSE: ", "udp_buf CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
+                    break;
+                case CMD_ERROR_REMOTE_ACCESS_DENIED:
+                    Log.v("RESPONSE: ", "udp_buf CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
+                    break;
+                default:
+
+                    break;
+            }
+            transferSocket.close();
+
+        } catch (SocketTimeoutException e){
+            transferSocket.close();
+            Log.v("ACCESS_REQ: ", "RECEIVE Timeout: " + e.toString());
+            return -1;
+        } catch (IOException e){
+            transferSocket.close();
+            Log.v("ACCESS_REQ: ", "RECEIVE IOException: " + e.toString());
+            return -1;
+        }
+
+        return -1;
+    }
+
+/*
     public int send_request(char[] p_IPv4, char[] p_port, char[] p_device_name, char[] p_card_id){
 
         Log.v("TASK: ", "send_request: Starting ===");
@@ -311,7 +358,7 @@ public class AccessRequest {
                 out_qdata.send_tinf.setRet_value(-8);
                 return out_qdata.send_tinf.getRet_value();
             }
-        */
+
         } catch (SocketException e){
             // could not open a socket
             out_qdata.send_tinf.setRet_value(-1);
@@ -411,5 +458,6 @@ public class AccessRequest {
             return 0;
         }
     }
+    */
 }
 
