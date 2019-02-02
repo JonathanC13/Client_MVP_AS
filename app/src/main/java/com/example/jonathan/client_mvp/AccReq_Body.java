@@ -32,6 +32,7 @@ public class AccReq_Body {
 
     // create new body
     public AccReq_Body(AccReq_packet_props pack_props){
+        currentBody_SIZE = 0;
         this.packet_props = pack_props;
         i_MAX_MSG_BODY_SIZE = packet_props.MAX_MSG_BODY_SIZE;
         this.bodyBuffer = new byte[i_MAX_MSG_BODY_SIZE];
@@ -43,8 +44,10 @@ public class AccReq_Body {
     }
 
     public byte[] getBodyFromMsg(int lengthPacket){
-        byte[] ret_BD = new byte[packet_props.body_randNum_SIZE];
-        System.arraycopy(bodyBuffer, packet_props.IDX_BODY, ret_BD, 0, lengthPacket - packet_props.MSG_HEADER_SIZE);
+        //byte[] ret_BD = new byte[packet_props.MAX_MSG_BODY_SIZE];
+        int bodySize = lengthPacket - packet_props.MSG_HEADER_SIZE;
+        byte[] ret_BD = new byte[bodySize];
+        System.arraycopy(bodyBuffer, packet_props.IDX_BODY, ret_BD, 0, bodySize);
         return ret_BD;
     }
 
@@ -74,9 +77,9 @@ public class AccReq_Body {
 
         b_randNum = packet_props.changeEndian(packet_props.hexStringToByteArray(randomHex));
 
-        if((currentBody_SIZE + packet_props.body_randNum_SIZE) > i_MAX_MSG_BODY_SIZE || (b_randNum.length > packet_props.body_randNum_SIZE)){
+        if(b_randNum.length > packet_props.body_randNum_SIZE){
             // if adding causes over limit copy to limit, need trim
-            System.arraycopy(b_randNum, 0, bodyBuffer, packet_props.IDX_RN, i_MAX_MSG_BODY_SIZE - currentBody_SIZE);
+            System.arraycopy(b_randNum, 0, bodyBuffer, packet_props.IDX_RN, packet_props.body_randNum_SIZE);
         } else {
             // has sufficient space for this segment
             System.arraycopy(b_randNum, 0, bodyBuffer, packet_props.IDX_RN, b_randNum.length);
@@ -85,7 +88,7 @@ public class AccReq_Body {
         //Log.v("PACKET: ", "RN size = " + currentBody_SIZE);
     }
 
-
+    /*
     public int changeRandomNum(String changeRN){
 
         if(bodyBuffer.length > 0) {
@@ -104,6 +107,7 @@ public class AccReq_Body {
         } // else not set yet
         return -1;
     }
+    */
 
     public byte[] getRandomNum(){
         byte[] ret_RN = new byte[packet_props.body_randNum_SIZE];
@@ -120,9 +124,9 @@ public class AccReq_Body {
         b_devName = sTob;
 
         int sTob_len = sTob.length;
-        if((currentBody_SIZE + packet_props.body_devName_SIZE) > i_MAX_MSG_BODY_SIZE || sTob_len > packet_props.body_devName_SIZE) {
+        if(sTob_len > packet_props.body_devName_SIZE) {
             // copy array MAX_SIZE to body buffer
-            System.arraycopy(sTob, 0, bodyBuffer, packet_props.IDX_DN, i_MAX_MSG_BODY_SIZE - currentBody_SIZE);
+            System.arraycopy(sTob, 0, bodyBuffer, packet_props.IDX_DN, packet_props.body_devName_SIZE);
         } else {
             // copy sTob.length to body buffer
             System.arraycopy(sTob, 0, bodyBuffer, packet_props.IDX_DN, sTob_len);
@@ -152,9 +156,9 @@ public class AccReq_Body {
         b_cardNum = sTob;
 
         int sTob_len = sTob.length;
-        if((currentBody_SIZE + packet_props.body_cardNum_SIZE) > i_MAX_MSG_BODY_SIZE || sTob_len > packet_props.body_cardNum_SIZE) {
+        if(sTob_len > packet_props.body_cardNum_SIZE) {
             // copy array MAX_SIZE to body buffer
-            System.arraycopy(sTob, 0, bodyBuffer, packet_props.IDX_CN, i_MAX_MSG_BODY_SIZE - currentBody_SIZE);
+            System.arraycopy(sTob, 0, bodyBuffer, packet_props.IDX_CN, packet_props.body_cardNum_SIZE);
         } else {
             // copy sTob.length to body buffer
             System.arraycopy(sTob, 0, bodyBuffer, packet_props.IDX_CN, sTob_len);
@@ -184,8 +188,8 @@ public class AccReq_Body {
         byte[] oneCompCN = xor1Comp(og_CN);
         b_1comp_cardNum = oneCompCN;
 
-        if((currentBody_SIZE + packet_props.body_1comp_cardNum_SIZE) > i_MAX_MSG_BODY_SIZE || oneCompCN.length > packet_props.body_1comp_cardNum_SIZE) {
-            System.arraycopy(oneCompCN, 0, bodyBuffer, packet_props.IDX_1CN, i_MAX_MSG_BODY_SIZE - currentBody_SIZE);
+        if(oneCompCN.length > packet_props.body_1comp_cardNum_SIZE) {
+            System.arraycopy(oneCompCN, 0, bodyBuffer, packet_props.IDX_1CN, packet_props.body_1comp_cardNum_SIZE);
         } else{
             System.arraycopy(oneCompCN, 0, bodyBuffer, packet_props.IDX_1CN, oneCompCN.length);
         }

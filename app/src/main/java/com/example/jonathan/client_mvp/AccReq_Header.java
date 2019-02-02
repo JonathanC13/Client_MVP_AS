@@ -12,7 +12,7 @@ public class AccReq_Header {
 
     private int i_MSG_HEADER_SIZE;
 
-    private int currentHeader_SIZE = 0;
+    //private int currentHeader_SIZE = 0;
 
     private byte[] headerBuffer;
     private byte[] b_cmd;
@@ -25,6 +25,7 @@ public class AccReq_Header {
 
     AccReq_packet_props packet_props;
 
+    // existing packet
     public AccReq_Header(byte[] existingBuffer, AccReq_packet_props pack_props){
         this.packet_props = pack_props;
         // just set the whole buffer (header + body) to headerBuffer. Just need to analyze header segments
@@ -32,10 +33,12 @@ public class AccReq_Header {
         i_MSG_HEADER_SIZE = packet_props.MSG_HEADER_SIZE;
     }
 
+    // completely new packet
     public AccReq_Header(AccReq_packet_props pack_props){
         this.packet_props = pack_props;
         i_MSG_HEADER_SIZE = packet_props.MSG_HEADER_SIZE;
         headerBuffer = new byte[i_MSG_HEADER_SIZE];
+        this.zeroHeader();
     }
 
     public void zeroHeader(){
@@ -45,6 +48,8 @@ public class AccReq_Header {
     public byte[] getHeaderBuffer(){
         return headerBuffer;
     }
+
+    // get header from packet. do i need?
 
     public int getHeaderBufferSIZE(){
         return headerBuffer.length;
@@ -58,13 +63,35 @@ public class AccReq_Header {
         // convert command to bytes then copy to header
         b_cmd = packet_props.convertIntToByteArr(UNICAST_REQ_CMD, packet_props.header_CMD_SIZE);
 
-        if((currentHeader_SIZE + packet_props.header_CMD_SIZE) > i_MSG_HEADER_SIZE || (b_cmd.length > packet_props.body_randNum_SIZE)) {
+        /* Don't need this, just override section.
+        if((currentHeader_SIZE + packet_props.header_CMD_SIZE) > i_MSG_HEADER_SIZE) {
+            // if adding the cmd segment will overflow the header buffer
+            // fill the space that is left, if any, with the cmd bytes. This mostly likely will lead to malformed packet and error response from destination
             System.arraycopy(b_cmd, 0, headerBuffer, packet_props.IDX_CMD, i_MSG_HEADER_SIZE - currentHeader_SIZE);
+        }else if(b_cmd.length > packet_props.header_CMD_SIZE){
+            // if cmd size is greater than the cmd segment in the header
+            System.arraycopy(b_cmd, 0, headerBuffer, packet_props.IDX_CMD, packet_props.header_CMD_SIZE);
         } else {
             System.arraycopy(b_cmd, 0, headerBuffer, packet_props.IDX_CMD, b_cmd.length);
         }
-
         currentHeader_SIZE += packet_props.header_CMD_SIZE;
+        */
+
+        if(b_cmd.length > packet_props.header_CMD_SIZE){
+            // if cmd size is greater than the cmd segment in the header, then trim to segment size
+            try {
+                System.arraycopy(b_cmd, 0, headerBuffer, packet_props.IDX_CMD, packet_props.header_CMD_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setCmd, cmd length > Cmd segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            try {
+                System.arraycopy(b_cmd, 0, headerBuffer, packet_props.IDX_CMD, b_cmd.length);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setCmd, attempted to copy to segment but err: " + e.toString());
+            }
+        }
+
     }
 
     // get from buffer instead of global var
@@ -84,14 +111,30 @@ public class AccReq_Header {
         o_senderAddr.setServer_ipv4(s_ipv4);
         o_senderAddr.setServer_port(senderPort);
 
+        /*
         if((currentHeader_SIZE + packet_props.header_SDA_SIZE) > i_MSG_HEADER_SIZE || (o_senderAddr.getServerIP_Len() > packet_props.header_SDA_SIZE)) {
             System.arraycopy(o_senderAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_SRCBRD, i_MSG_HEADER_SIZE - currentHeader_SIZE);
         } else {
             // just copy the ip
             System.arraycopy(o_senderAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_SRCBRD, o_senderAddr.getServerIP_Len());
         }
-
         currentHeader_SIZE += packet_props.header_SDA_SIZE;
+        */
+
+        if(o_senderAddr.getServerIP_Len() > packet_props.header_SDA_SIZE) {
+            try{
+            System.arraycopy(o_senderAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_SRCBRD, packet_props.header_CMD_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setSender, senderIPV4 length > senderIPV4 segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            // just copy the ip
+            try {
+                System.arraycopy(o_senderAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_SRCBRD, o_senderAddr.getServerIP_Len());
+            } catch (Exception e){
+                Log.v("PACKET: ", "setSender, senderIPV4, attempted to copy to segment but err: " + e.toString());
+            }
+        }
     }
 
     // parse header
@@ -109,14 +152,30 @@ public class AccReq_Header {
         o_DestAddr.setServer_ipv4(s_ipv4);
         o_DestAddr.setServer_port(destPort);
 
+        /*
         if((currentHeader_SIZE + packet_props.header_DDA_SIZE) > i_MSG_HEADER_SIZE || (o_DestAddr.getServerIP_Len() > packet_props.header_DDA_SIZE)) {
             System.arraycopy(o_DestAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_DESTBRD, i_MSG_HEADER_SIZE - currentHeader_SIZE);
         } else {
             // just copy the ip
             System.arraycopy(o_DestAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_DESTBRD, o_DestAddr.getServerIP_Len());
         }
-
         currentHeader_SIZE += packet_props.header_DDA_SIZE;
+        */
+
+        if(o_DestAddr.getServerIP_Len() > packet_props.header_DDA_SIZE) {
+            try {
+                System.arraycopy(o_DestAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_DESTBRD, packet_props.header_DDA_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setDest, destIPV4 length > destIPV4 segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            // just copy the ip
+            try {
+                System.arraycopy(o_DestAddr.getServer_ipv4(), 0, headerBuffer, packet_props.IDX_DESTBRD, o_DestAddr.getServerIP_Len());
+            } catch (Exception e){
+                Log.v("PACKET: ", "setDest, destIPV4, attempted to copy to segment but err: " + e.toString());
+            }
+        }
     }
 
     public byte[] getDestDeviceAddr(){
@@ -130,13 +189,29 @@ public class AccReq_Header {
 
         b_seqNum = packet_props.convertIntToByteArr(seqNum, packet_props.header_MSQ_SIZE);
 
+        /*
         if((currentHeader_SIZE + packet_props.header_MSQ_SIZE) > i_MSG_HEADER_SIZE || (b_seqNum.length > packet_props.header_MSQ_SIZE)) {
             System.arraycopy(b_seqNum, 0, headerBuffer, packet_props.IDX_SEQ, i_MSG_HEADER_SIZE - currentHeader_SIZE);
         } else {
             System.arraycopy(b_seqNum, 0, headerBuffer, packet_props.IDX_SEQ, b_seqNum.length);
         }
-
         currentHeader_SIZE += packet_props.header_MSQ_SIZE;
+        */
+
+        if(b_seqNum.length > packet_props.header_MSQ_SIZE) {
+            // need trim to segment size
+            try{
+                System.arraycopy(b_seqNum, 0, headerBuffer, packet_props.IDX_SEQ, packet_props.header_MSQ_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setSeqNum, seqNum length > seqNum segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            try{
+                System.arraycopy(b_seqNum, 0, headerBuffer, packet_props.IDX_SEQ, b_seqNum.length);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setSeqNum, attempted to copy to segment but err: " + e.toString());
+            }
+        }
     }
 
     public byte[] getMsgSeqNum(){
@@ -154,13 +229,28 @@ public class AccReq_Header {
         b_sign = new byte[packet_props.header_MSE_SIZE];
         Arrays.fill(b_sign, (byte) 0);
 
+        /*
         if((currentHeader_SIZE + packet_props.header_MSE_SIZE) > i_MSG_HEADER_SIZE || (b_sign.length > packet_props.header_MSE_SIZE)) {
             System.arraycopy(b_sign, 0, headerBuffer, packet_props.IDX_SIGN, i_MSG_HEADER_SIZE - currentHeader_SIZE);
         } else {
             System.arraycopy(b_sign, 0, headerBuffer, packet_props.IDX_SIGN, b_sign.length);
         }
-
         currentHeader_SIZE += packet_props.header_MSE_SIZE;
+        */
+
+        if(b_sign.length > packet_props.header_MSE_SIZE) {
+            try {
+                System.arraycopy(b_sign, 0, headerBuffer, packet_props.IDX_SIGN, packet_props.header_MSE_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setMsgSig, MsgSig length > MsgSig segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            try{
+                System.arraycopy(b_sign, 0, headerBuffer, packet_props.IDX_SIGN, b_sign.length);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setMsgSig, attempted to copy to segment but err: " + e.toString());
+            }
+        }
     }
 
     public byte[] getMsgSignature(){
@@ -182,15 +272,31 @@ public class AccReq_Header {
         byte[] b_timeSec = b2.array();
 
         b_timeStamp = new byte[packet_props.header_TMS_SIZE];
+        Arrays.fill(b_timeStamp, (byte) '0');
+
         System.arraycopy(b_timeSec, 0, b_timeStamp, 0, b_timeStamp.length);
 
+        /*
         if((currentHeader_SIZE + packet_props.header_TMS_SIZE) > i_MSG_HEADER_SIZE || (b_timeStamp.length > packet_props.header_TMS_SIZE)) {
             System.arraycopy(b_timeStamp, 0, headerBuffer, packet_props.IDX_TSTAMP, i_MSG_HEADER_SIZE - currentHeader_SIZE);
         } else {
             System.arraycopy(b_timeStamp, 0, headerBuffer, packet_props.IDX_TSTAMP, 4);
         }
-
         currentHeader_SIZE += packet_props.header_TMS_SIZE;
+        */
+        if(b_timeStamp.length > packet_props.header_TMS_SIZE) {
+            try {
+                System.arraycopy(b_timeStamp, 0, headerBuffer, packet_props.IDX_TSTAMP, packet_props.header_TMS_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setTimeStamp, timeStamp length > timeStamp segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            try {
+                System.arraycopy(b_timeStamp, 0, headerBuffer, packet_props.IDX_TSTAMP, b_timeStamp.length);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setTimeStamp, attempted to copy to segment but err: " + e.toString());
+            }
+        }
 
     }
 
@@ -206,13 +312,29 @@ public class AccReq_Header {
 
         b_bodyByteCount = packet_props.convertIntToByteArr(byteCount, packet_props.header_MBC_SIZE);
 
+        /*
         if((currentHeader_SIZE + packet_props.header_MBC_SIZE) > i_MSG_HEADER_SIZE || (b_bodyByteCount.length > packet_props.header_MBC_SIZE)) {
             System.arraycopy(b_bodyByteCount, 0, headerBuffer, packet_props.IDX_BCNT, i_MSG_HEADER_SIZE - currentHeader_SIZE);
         } else {
             System.arraycopy(b_bodyByteCount, 0, headerBuffer, packet_props.IDX_BCNT, b_bodyByteCount.length);
         }
-
         currentHeader_SIZE += packet_props.header_MBC_SIZE;
+        */
+
+        if(b_bodyByteCount.length > packet_props.header_MBC_SIZE) {
+            try {
+                System.arraycopy(b_bodyByteCount, 0, headerBuffer, packet_props.IDX_BCNT, packet_props.header_MBC_SIZE);
+            } catch (Exception e){
+                Log.v("PACKET: ", "setBodyByteCount, bodybyteCount length > bodybyteCount segment length, attempted to trim to segment but err: " + e.toString());
+            }
+        } else {
+            try {
+                System.arraycopy(b_bodyByteCount, 0, headerBuffer, packet_props.IDX_BCNT, b_bodyByteCount.length);
+            }  catch (Exception e){
+                Log.v("PACKET: ", "setBodyByteCount, attempted to copy to segment but err: " + e.toString());
+            }
+
+        }
     }
 
     // dont order out of little endian just return

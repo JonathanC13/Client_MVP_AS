@@ -16,7 +16,7 @@ public class AccReq_packet_props {
     protected static final int MAX_WHOLE_MSG_SIZE = MSG_HEADER_SIZE + MAX_MSG_BODY_SIZE;
     protected static final int MAX_UDP_MSGSIZE = 1024;
 
-    //sizes for the header segments
+    //sizes for the header segments. NOTE TO DEV, adding all segment sizes must add up to MSG_HEADER_SIZE;
     protected final static int header_CMD_SIZE = 4;
     protected final static int header_SDA_SIZE = 4;
     protected final static int header_DDA_SIZE = 4;
@@ -25,7 +25,7 @@ public class AccReq_packet_props {
     protected final static int header_TMS_SIZE = 4;
     protected final static int header_MBC_SIZE = 4;
 
-    //sizes for the body segments
+    //sizes for the body segments. Add up less than MAX_MSG_BODY_SIZE
     protected int body_randNum_SIZE = 4;
     protected int body_devName_SIZE = 128;
     protected int body_cardNum_SIZE = 64;

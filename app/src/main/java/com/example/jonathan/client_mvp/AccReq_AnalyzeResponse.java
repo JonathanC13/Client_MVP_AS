@@ -25,6 +25,7 @@ public class AccReq_AnalyzeResponse {
         if(packetLen >= packet_props.MSG_HEADER_SIZE){
             // received message is well formed, has a valid header
             byte[] b_recCmd = AR_header.getCmd();
+            // change endian then convert to int
             int i_cmd = java.nio.ByteBuffer.wrap(b_recCmd).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
             return i_cmd;
         }

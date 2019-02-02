@@ -1,5 +1,7 @@
 package com.example.jonathan.client_mvp;
 
+import android.util.Log;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -42,6 +44,8 @@ public class AccReq_net_info {
             byte[] bytes = inet_ip.getAddress();
 
             int b_len = bytes.length;
+
+            // to little endian
             byte[] rev = new byte[b_len];
             for(int i = 0; i < b_len; i ++){
                 if(i < IPV4_LEN){
@@ -49,7 +53,21 @@ public class AccReq_net_info {
                 }
             }
 
-            System.arraycopy(rev, 0, server_ipv4,0, rev.length);
+            if(rev.length > IPV4_LEN){
+                // if rev size is greater than the IPV4 segment in the header, then trim to segment size
+                try {
+                    System.arraycopy(rev, 0, server_ipv4, 0, IPV4_LEN);
+                } catch (Exception e){
+                    Log.v("PACKET: ", "setServerIp, ip length > IPV4 segment length, attempted to trim to segment but err: " + e.toString());
+                }
+            } else {
+                try {
+                    System.arraycopy(rev, 0, server_ipv4, 0, rev.length);
+                } catch (Exception e){
+                    Log.v("PACKET: ", "setServerIp, attempted to copy to segment but err: " + e.toString());
+                }
+            }
+
 
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block

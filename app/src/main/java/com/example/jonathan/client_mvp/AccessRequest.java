@@ -83,6 +83,7 @@ public class AccessRequest {
 
     public int test_request(String dest_ip, String dest_device_name, int dest_port, String card_id){
 
+
         AccReq_CreateReqPacket o_AccessReq = new AccReq_CreateReqPacket(dest_ip, dest_device_name, dest_port, card_id);
         byte[] accessRequestMsg = o_AccessReq.getReqMsg();
 
@@ -96,13 +97,18 @@ public class AccessRequest {
 
         InetAddress myaddr, remoteaddr;
 
+        String herdcodedip = "192.168.2.21";
+        int hardcodedport= 65000;
         try {
-            remoteaddr = InetAddress.getByName(dest_ip);
+            remoteaddr = InetAddress.getByName(herdcodedip);
             transferSocket = new DatagramSocket();
 
-            DatagramPacket packet_send = new DatagramPacket(sendPacket, sendPacket.length, remoteaddr, dest_port);
-            //transferSocket.send(packet_send); for test comment out
-            transferSocket.close();
+            DatagramPacket packet_send = new DatagramPacket(sendPacket, sendPacket.length, remoteaddr, hardcodedport);
+
+            //Log.v("PACEKT:", "sending " + AccReq_packet_props.unpackByteArr(sendPacket));
+
+            transferSocket.send(packet_send); //for test comment out
+            //transferSocket.close();
         } catch (IOException e){
             transferSocket.close();
             Log.v("ACCESS_REQ: ", "SEND IOException: " + e.toString());
@@ -125,7 +131,7 @@ public class AccessRequest {
             switch(cmdCode) // based on the message command, create a return message and send it
             {
                 case CMD_OK:    // cmd 4096
-                    Log.v("RESPONSE: ", "udp_buf CMD_OK received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
+                    Log.v("RESPONSE: ", "udp_buf CMD_OK received: " + AccReq_packet_props.unpackByteArr(AR_B.getBodyFromMsg(packetLen)) + ": with " + packetLen + " bytes.");
                     // THis command meaning request accepted and door open?
                     transferSocket.close();
                     return 1;

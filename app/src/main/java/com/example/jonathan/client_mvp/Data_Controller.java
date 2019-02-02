@@ -349,7 +349,8 @@ public class Data_Controller {
         else {
             // udp send to open door and wait for receive message
             Log.v("RESPONSE: ", "START");
-            UDP_controller udpTask = new UDP_controller(button_IP, employeeCard);
+            //todo DB mod and add door properties
+            UDP_controller udpTask = new UDP_controller(button_IP, "RDR5, C6:I0:R2",65000, employeeCard);
             int response = udpTask.executeUDP(); // Starts async task for udp operation
             Log.v("RESPONSE: ", "Data_Controller returned: " + response);
             // need to determine success code

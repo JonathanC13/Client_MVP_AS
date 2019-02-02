@@ -16,21 +16,26 @@ public class AccReq_CreateReqPacket {
     public AccReq_CreateReqPacket(String dest_ip, String dest_device_name, int dest_port, String card_id){
         pack_props = new AccReq_packet_props();
 
+        // <initialize buffer to max size the packet should be>
         b_req_msg = new byte[pack_props.MAX_UDP_MSGSIZE];
+        // </>
 
+        // <get this (sender) IP>
         String s_senderIP = "";
         try {
             s_senderIP = InetAddress.getLocalHost().getHostAddress();
-
         } catch (UnknownHostException e){
-
+            Log.v("PACKET: ", "Could not get local IP address, err: " + e.toString());
         }
+        // </>
+
         Log.v("PACKET: ", "LOCAL IP: " + s_senderIP);
+
 
         AccReq_Header AR_header = new AccReq_Header(pack_props);
         AR_header.setCmd(pack_props.UNICAST_ACC_REQ_CMD);
         AR_header.setSenderDeviceAddr(s_senderIP, 69);
-        AR_header.setDestDeviceAddr("192.168.2.20", 69);
+        AR_header.setDestDeviceAddr("192.168.2.21", 65000);
         AR_header.setMsgSequenceNum( 0);
         AR_header.setMsgSignature();
         AR_header.setTimeStamp();
@@ -38,10 +43,11 @@ public class AccReq_CreateReqPacket {
 
         AccReq_Body AR_body = new AccReq_Body(pack_props);
         AR_body.setRandomNum();
-        AR_body.setDevName( "RDR2, C3:IO:R2");
+        AR_body.setDevName( "RDR5, C6:I0:R2");
         AR_body.setCardNum("41165377");
         AR_body.set1CompCardNum();
         AR_body.compactBody();
+
         AR_body.printBody();
 
         // ==
