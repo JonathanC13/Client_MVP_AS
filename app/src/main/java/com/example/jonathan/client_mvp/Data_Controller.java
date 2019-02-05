@@ -81,17 +81,14 @@ public class Data_Controller {
 
     Context currContext;
 
-    PairedDevices PairedSet;
-    private String mConnectedDeviceName = null;
-    private BlueTooth_service mTransferService = null;
-
-    BluetoothAdapter mBluetoothAdapter;
+    FloorActivity calling_FloorAct;
 
 
-    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, PairedDevices Paired, BluetoothAdapter mBluetoothAdapter){
+    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, FloorActivity flrAct){
 
-        this.mBluetoothAdapter = mBluetoothAdapter;
-        PairedSet = Paired;
+        //Calling activity handles bluetooth
+        calling_FloorAct = flrAct;
+        //
 
         currContext = cont;
 
@@ -347,6 +344,13 @@ public class Data_Controller {
         // continue if employee card not "fail" since the Pi should automatically reject a packet with no card
         if (employeeCard.equals(sp_fail)){ }
         else {
+            //String re_print = bt_testObj.refreshBT();
+            //Log.v("BT: ", "onClick: " + re_print);
+
+
+
+
+            /* UDP works, comment out to test bluetooth
             // udp send to open door and wait for receive message
             Log.v("RESPONSE: ", "START");
             //todo DB mod and add door properties
@@ -360,6 +364,7 @@ public class Data_Controller {
             } else {
                 // change to yellow to indicate problem and not open
             }
+            */
         }
 
         // if ack receive that door is opened, change color of door to green for "opened" time // May not wait for a response though
@@ -491,6 +496,7 @@ public class Data_Controller {
     }
 
 
+    /*
     private void setupComms(BluetoothDevice btD, UUID btID){
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(!mBluetoothAdapter.isEnabled()){
@@ -571,5 +577,6 @@ public class Data_Controller {
             }
         }
     };
+    */
 
 }

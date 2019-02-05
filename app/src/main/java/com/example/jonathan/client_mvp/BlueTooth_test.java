@@ -28,7 +28,7 @@ public class BlueTooth_test extends Activity {
     public String bt_log;
 
     BluetoothAdapter mBluetoothAdapter;
-    Set<BluetoothDevice> pairedDevices; // query list for discovered bluetooth devices
+    Set<BluetoothDevice> pairedDevices; // query list for paired bluetooth devices
 
     BlueTooth_test() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -47,26 +47,26 @@ public class BlueTooth_test extends Activity {
 
         bt_log = "";
 
-        Log.v("TASK: ", "RES, START");
+        Log.v("BT: ", "RES, START");
         if (mBluetoothAdapter == null) {
             // Device doesn't support Bluetooth
-            Log.v("TASK: ", "NULL BT ADAPTER");
+            Log.v("BT: ", "NULL BT ADAPTER");
         }
         // else mBluetoothAdapter is assigned the device's Bluetooth adapter (bluetooth radio)
         else {
-            Log.v("TASK: ", "RES, NOT NULL");
+            Log.v("BT: ", "RES, NOT NULL");
             // check if Bluetooth is not enabled
             if (!mBluetoothAdapter.isEnabled()) {
                 // not enabled, turn on
-                Log.v("TASK: ", "RES, NOT ENABLED");
-                // <Crashing>
+                Log.v("BT: ", "RES, NOT ENABLED");
+                // <Crashing> prompt user for enabling BT todo do I try to fix?
                 //Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 //startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 // </Crashing>
                 bt_log += "Bluetooth not enabled!";
             } else {
                 initializeDiscovery();
-                // todo, after discovery all done the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
+                // todo: after discovery all done, the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
                 iterateBluetoothDevices(); // print in log to debug
             }
         }
@@ -114,7 +114,7 @@ public class BlueTooth_test extends Activity {
                 // Before discovery, need to query the set of paired devices to have a record of the already known devices.
                 initializeDiscovery();
 
-                // todo, after discovery all done the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
+                // todo, after discovery all done, the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
                 iterateBluetoothDevices(); // print in log to debug
                 // todo, When a door icon is clicked this data structure is searched and a connection is established and the data is exchanged.
                 // note, Android will probably be the client, since the door Pi will has a socket open and listening for requests.
@@ -132,19 +132,28 @@ public class BlueTooth_test extends Activity {
 
     // initialize discovery
     void initializeDiscovery() {
+        Log.v("BT: ", "<initializeDiscovery>");
+
+
         // <Discover devices>
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
         }
         mBluetoothAdapter.startDiscovery(); // has a timer, base inquiry scan of about 12 seconds and then it does a page scan of each device found to retrieve its bluetooth information.
+        Log.v("BT: ", "</initializeDiscovery>");
     }
 
     // Query all discovered devices and can do something with it.
     // for testing sets string for all discovered devices
     void iterateBluetoothDevices() {
+        Log.v("BT: ", "<iterateBluetoothDevices>");
         // <Query snippet>
         if (mBluetoothAdapter != null) {
-            pairedDevices = mBluetoothAdapter.getBondedDevices();
+            if(mBluetoothAdapter.isDiscovering()){
+                Log.v("BT: ", "<iterateBluetoothDevices> Discovery cancel");
+                mBluetoothAdapter.cancelDiscovery();
+            }
+            pairedDevices = mBluetoothAdapter.getBondedDevices(); // Return the set of BluetoothDevice objects that are bonded (paired) to the local adapter. Stores them in Set<BluetoothDevice>
             if (pairedDevices.size() > 0) {
                 // There are paired devices. Get the name and address of each paired device.
                 for (BluetoothDevice device : pairedDevices) {
@@ -153,10 +162,11 @@ public class BlueTooth_test extends Activity {
                     // Unadvised to connect while performing device discovery since discovery uses a lot of the Bluetooth adapter's resources, use cancelDiscovery() to cancel
                     // Unadvised to initiate a discovery if there is a device connected because it will reduce the bandwidth available for the existing connections.
                     //Log.v("BT: ", "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
-                    bt_log += "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress + "\n";
+                    bt_log += "Query paired: Name: " + deviceName + ".MAC: " + deviceHardwareAddress + "\n";
                 }
             }
-        }
+        } // else would need todo prompt user again if BT was disabled since after launch
+        Log.v("BT: ", "</iterateBluetoothDevices>");
         // </Query snippet>
     }
 
@@ -198,24 +208,39 @@ public class BlueTooth_test extends Activity {
     protected void onCreate(Bundle saveInstanceState){
         super.onCreate(saveInstanceState);
         // Register for broadcasts when a device is discovered.
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        // <intent>
+        IntentFilter filter = new IntentFilter();
+
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+
         registerReceiver(mReceiver, filter);
+
+        // </intent>
     }
 
 
+    // Intent for startDiscovery
     // create a BroadcastReceiver for ACTION_FOUND
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if(BluetoothDevice.ACTION_FOUND.equals(action)){
+
+            if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
+                Log.v("BT: ", "<> Discovery started!");
+            } else if(BluetoothDevice.ACTION_FOUND.equals(action)){
                 // Discovery has found a device. Get the Bluetooth device
                 // object and its info from intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
-                Log.v("BT: ", "Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                Log.v("BT: ", "<> Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
 
                 // Can save into a data structure here as they discover
+            } else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
+                Log.v("BT: ", "<> Discovery ended!"); // may continue off this if iterate happens before discovery ends
             }
             /* // constant discovery loop
             else if (BluetoothDevice.ACTION_DISCOVERY_FINISHED.equals(action)){

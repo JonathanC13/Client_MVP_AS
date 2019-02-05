@@ -39,16 +39,18 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Set;
 
 public class FloorActivity extends AppCompatActivity {
 
 
     // Bluetooth discovery
-    private String mConnectedDeviceName = null;
-    private BlueTooth_service mTransferService = null;
+    //private String mConnectedDeviceName = null;
+    //private BlueTooth_service mTransferService = null;
     BluetoothAdapter mBluetoothAdapter;
-    private PairedDevices Paired;
+    private Set<BluetoothDevice> pairedDevices; // query list for paired bluetooth devices
+    private Set<BluetoothDevice> discoveredDevices; // query list for discovered bluetooth devices
 
     private ImageView main_img;
     private Data_Controller dataPull;
@@ -68,7 +70,6 @@ public class FloorActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         dataPull = null;
-        //Paired = new PairedDevices();
 
         String s_fail = "fail";
         String s_copyEmpty = "fail";
@@ -108,6 +109,17 @@ public class FloorActivity extends AppCompatActivity {
             }
         });
         */
+
+        // set bluetooth adapter.
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        // Register for broadcasts when a device is discovered.
+        // <intent>
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(mReceiver, filter);
+        // </intent>
 
         scale = getResources().getDisplayMetrics().density;
         final Spinner s_items = (Spinner) findViewById(R.id.spn_lvls);
@@ -206,25 +218,7 @@ public class FloorActivity extends AppCompatActivity {
         this.refreshData();
 
         // <Initial Bluetooth scan>
-        // for test, only do the initial scan
-/*
-        bt_test = new BlueTooth_test();
-        String bt_log = bt_test.refreshBT();
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setMessage(bt_log).setTitle("Current BT devices.")
-                // buttons
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        dialogInterface.dismiss();
-                    }
-                });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-*/
-
+        this.BT_refresh();
         // </Initial Bluetooth scan>
 
         // Listeners below
@@ -318,62 +312,8 @@ public class FloorActivity extends AppCompatActivity {
         });
 
 
-        // BT adapter
-        /*
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(!mBluetoothAdapter.isEnabled() || mBluetoothAdapter == null){
-            // not enabled
-        } else {
-            // Register for broadcasts when a device is discovered
-            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-            registerReceiver(mReceiver, filter);
-
-            Paired.pairedDevices = mBluetoothAdapter.getBondedDevices();
-
-            Paired.initializeDiscovery(mBluetoothAdapter);
-        }
-        String yeet = "";
-        if(Paired.pairedDevices.size() > 0){
-            //for (BluetoothDevice device : Paired.pairedDevices){
-              //  yeet += device.getName() + " : " + device.getAddress() + "\n";
-            //}
-            yeet = Paired.iterateBluetoothDevices(mBluetoothAdapter);
-        }
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setMessage(yeet).setTitle("Current BT devices.")
-                // buttons
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        dialogInterface.dismiss();
-                    }
-                });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-        */
     }
 
-
-
-    // <BT>
-
-    // Create a BroadcastReceiver for ACTION_FOUND
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if(BluetoothDevice.ACTION_FOUND.equals(action)){
-                // Discovery has found a device. Get the BluetoothDevice
-                // object and its info from the Intent (name and MAC)
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // MAC Address
-            }
-        }
-    };
-
-    // </BT>
 
     public void refreshData(){
         // clear current doors to clean diaplay
@@ -381,7 +321,7 @@ public class FloorActivity extends AppCompatActivity {
             dataPull.clear_prev_doors(this);
         }
 
-        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale, context, Paired, mBluetoothAdapter);
+        dataPull = new Data_Controller(intStorageDirectory, grd_scr, scale, context, this);
         DB_Controller DB_con_con = new DB_Controller(this, dataPull);
 
         Spinner s_items1 = (Spinner) findViewById(R.id.spn_lvls);
@@ -535,6 +475,94 @@ public class FloorActivity extends AppCompatActivity {
         dataPull.updateFloor(this, curr_sel, main_img);
 
 
+    }
+
+    // <Bluetooth>
+    // Bluetooth refresh procedure
+    private void BT_refresh(){
+        if(mBluetoothAdapter == null){
+            mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
+        this.initializeDiscovery(); // discovers devices, when it ends the pairedDevices set and discoveredDevices set are filled. Then we try to pair all relevant devices that are doors
+    }
+
+    // Bluetooth discovery
+    private void initializeDiscovery() {
+        Log.v("BT: ", "<initializeDiscovery>");
+        // <Discover devices>
+        if (mBluetoothAdapter.isDiscovering()) {
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        mBluetoothAdapter.startDiscovery(); // has a timer, base inquiry scan of about 12 seconds and then it does a page scan of each device found to retrieve its bluetooth information.
+        Log.v("BT: ", "</initializeDiscovery>");
+    }
+
+    // Intent for startDiscovery
+    // create a BroadcastReceiver for ACTION_FOUND
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if(BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)){
+                Log.v("BT: ", "<> Discovery started!");
+                discoveredDevices = new HashSet<>();
+            } else if(BluetoothDevice.ACTION_FOUND.equals(action)){
+                // Discovery has found a device. Get the Bluetooth device
+                // object and its info from intent
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                String deviceName = device.getName();
+                String deviceHardwareAddress = device.getAddress(); // MAC address
+                Log.v("BT: ", "<> Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                // Add the discovered device to the Set
+                discoveredDevices.add(device);
+
+                // Can save into a data structure here as they discover
+            } else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)){
+                Log.v("BT: ", "<> Discovery ended!");
+
+                if (mBluetoothAdapter != null) {
+                    if (mBluetoothAdapter.isDiscovering()) {
+                        Log.v("BT: ", "<iterateBluetoothDevices> Discovery cancel");
+                        mBluetoothAdapter.cancelDiscovery();
+                    }
+                    // fill the Set for already paired devices
+                    pairedDevices = mBluetoothAdapter.getBondedDevices(); // Return the set of BluetoothDevice objects that are bonded (paired) to the local adapter. Stores them in Set<BluetoothDevice>
+                    // print for logging
+                    if (pairedDevices.size() > 0) {
+                        // There are paired devices. Get the name and address of each paired device.
+                        for (BluetoothDevice device : pairedDevices) {
+                            String deviceName = device.getName();
+                            String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
+                            // Unadvised to connect while performing device discovery since discovery uses a lot of the Bluetooth adapter's resources, use cancelDiscovery() to cancel
+                            // Unadvised to initiate a discovery if there is a device connected because it will reduce the bandwidth available for the existing connections.
+                            //Log.v("BT: ", "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                            Log.v("BT: ","Paired - Query paired: Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+                        }
+                    }
+
+                    // todo here we can try to do the pairing to the door devices that haven't been paired
+                    // pairing without user prompting, auto
+
+                    // Floor activity gets the entire door list here (Data_collection. floor-doors objects) and pairs them. Need flag for currently paired or not
+                }
+
+            }
+            /* // constant discovery loop
+            else if (BluetoothDevice.ACTION_DISCOVERY_FINISHED.equals(action)){
+                mBluetoothAdapter.startDiscovery();
+            }
+
+             */
+        }
+    };
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+
+        // Must unregister the ACTION_FOUND receiver
+        unregisterReceiver(mReceiver);
     }
 
 
