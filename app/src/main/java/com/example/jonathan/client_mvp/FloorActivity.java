@@ -39,6 +39,7 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -511,9 +512,9 @@ public class FloorActivity extends AppCompatActivity {
                 // Discovery has found a device. Get the Bluetooth device
                 // object and its info from intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // MAC address
-                Log.v("BT: ", "<> Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                //String deviceName = device.getName();
+                //String deviceHardwareAddress = device.getAddress(); // MAC address
+                //Log.v("BT: ", "<> Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
                 // Add the discovered device to the Set
                 discoveredDevices.add(device);
 
@@ -526,22 +527,46 @@ public class FloorActivity extends AppCompatActivity {
                         Log.v("BT: ", "<iterateBluetoothDevices> Discovery cancel");
                         mBluetoothAdapter.cancelDiscovery();
                     }
+                    iterateDiscoveredDevices();
+
                     // fill the Set for already paired devices
                     pairedDevices = mBluetoothAdapter.getBondedDevices(); // Return the set of BluetoothDevice objects that are bonded (paired) to the local adapter. Stores them in Set<BluetoothDevice>
                     // print for logging
-                    if (pairedDevices.size() > 0) {
-                        // There are paired devices. Get the name and address of each paired device.
-                        for (BluetoothDevice device : pairedDevices) {
-                            String deviceName = device.getName();
-                            String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
-                            // Unadvised to connect while performing device discovery since discovery uses a lot of the Bluetooth adapter's resources, use cancelDiscovery() to cancel
-                            // Unadvised to initiate a discovery if there is a device connected because it will reduce the bandwidth available for the existing connections.
-                            //Log.v("BT: ", "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
-                            Log.v("BT: ","Paired - Query paired: Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
-                        }
-                    }
+                    iteratePairedDevices();
+
 
                     // todo here we can try to do the pairing to the door devices that haven't been paired
+                    BluetoothDevice foundDev = null;
+                    if(discoveredDevices.size() > 0){
+                        Log.v("BT: ", "dis List");
+                        for(BluetoothDevice disDev : discoveredDevices){
+                            String s_devName = disDev.getName();
+
+                            //Log.v("BT: ", "list Name: " + disDev.getName());
+                            if(s_devName != null) {
+                                if (s_devName.equals("RPi-W23-b827eb1789e5")) {
+                                    foundDev = disDev;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if(foundDev != null) {
+                        Boolean isBonded = false;
+                        try {
+                            isBonded = createBond(foundDev);
+                            if (isBonded) {
+                                //arrayListpaired.add(bdDevice.getName()+"\n"+bdDevice.getAddress());
+                                //adapter.notifyDataSetChanged();
+                                Log.v("BT: ", "BONDED ");
+                                iteratePairedDevices();
+                                //adapter.notifyDataSetChanged();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }//connect(bdDevice);
+                    }
+
                     // pairing without user prompting, auto
 
                     // Floor activity gets the entire door list here (Data_collection. floor-doors objects) and pairs them. Need flag for currently paired or not
@@ -556,6 +581,40 @@ public class FloorActivity extends AppCompatActivity {
              */
         }
     };
+
+    public boolean createBond(BluetoothDevice btDevice)
+            throws Exception
+    {
+        Class class1 = Class.forName("android.bluetooth.BluetoothDevice");
+        Method createBondMethod = class1.getMethod("createBond");
+        Boolean returnValue = (Boolean) createBondMethod.invoke(btDevice);
+        return returnValue.booleanValue();
+    }
+
+    private void iteratePairedDevices(){
+        if (pairedDevices.size() > 0) {
+            // There are paired devices. Get the name and address of each paired device.
+            for (BluetoothDevice device : pairedDevices) {
+                String deviceName = device.getName();
+                String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
+                // Unadvised to connect while performing device discovery since discovery uses a lot of the Bluetooth adapter's resources, use cancelDiscovery() to cancel
+                // Unadvised to initiate a discovery if there is a device connected because it will reduce the bandwidth available for the existing connections.
+                //Log.v("BT: ", "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                Log.v("BT: ","Paired - Query paired: Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+            }
+        }
+    }
+
+    private void iterateDiscoveredDevices(){
+        if (discoveredDevices.size() > 0) {
+            // There are paired devices. Get the name and address of each paired device.
+            for (BluetoothDevice device : discoveredDevices) {
+                String deviceName = device.getName();
+                String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
+                Log.v("BT: ","Discovered - Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+            }
+        }
+    }
 
     @Override
     protected void onDestroy(){

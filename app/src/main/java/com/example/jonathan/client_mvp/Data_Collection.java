@@ -25,8 +25,8 @@ public class Data_Collection {
     }
 
     // Set door and add
-    public void addDoor(String dr_name, double[] dr_margin, String dr_IP){
-        door_struct curr_door = new door_struct(dr_name, dr_margin, dr_IP);
+    public void addDoor(String dr_name, double[] dr_margin, String dr_IP, int dr_Port, String dev_remoteName, String dev_MAC){
+        door_struct curr_door = new door_struct(dr_name, dr_margin, dr_IP, dr_Port, dev_remoteName, dev_MAC);
         arr_doors.add(curr_door);
     }
 

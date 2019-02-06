@@ -73,16 +73,18 @@ public class DB_Controller {
     private static String TAG_DOORID;
     // </floor columns>
     // <door columns>
-    private static String TAG_DOORS;
-    private static String TAG_DR_PID;
-    private static String TAG_DR_NM;
+    private static String TAG_DOORS; // JSON obj name
+    private static String TAG_DR_PID;// ID, primary key from DB
+    private static String TAG_DR_NM; // door name, can be anything
     private static String TAG_DR_ID; // match with TAG_DOORID
-    private static String TAG_DR_ML;
-    private static String TAG_DR_MT;
-    private static String TAG_DR_MR;
-    private static String TAG_DR_MB;
-    private static String TAG_DR_IP;
-    private static String TAG_DR_UUID;
+    private static String TAG_DR_ML; // Margin left
+    private static String TAG_DR_MT; // Margin Top
+    private static String TAG_DR_MR; // Margin right
+    private static String TAG_DR_MB; // Margin bottom
+    private static String TAG_DR_IP; // IP for the device that has control of that door system. For UDP transport
+    private static String TAG_DR_PORT; // Port for the device. For UDP transport
+    private static String TAG_DR_DEV_NAME; // Remote device name, put in UDP packet for verification purposes.
+    private static String TAG_DR_DEV_MAC; // Remote device MAC, for bluetooth device pairing and transport
 
     // </door columns>
 
@@ -184,7 +186,9 @@ public class DB_Controller {
         TAG_DR_MR = ct.getResources().getString(R.string.j_drMR);
         TAG_DR_MB = ct.getResources().getString(R.string.j_drMB);
         TAG_DR_IP = ct.getResources().getString(R.string.j_drIP);
-        TAG_DR_UUID = ct.getResources().getString(R.string.j_drUUID);
+        TAG_DR_PORT = ct.getResources().getString(R.string.j_drPort);
+        TAG_DR_DEV_NAME = ct.getResources().getString(R.string.j_drDevName);
+        TAG_DR_DEV_MAC = ct.getResources().getString(R.string.j_drDevMAC);
         // </door columns>
         // </JSON Node names>
 
@@ -324,11 +328,14 @@ public class DB_Controller {
 
                 String dr_name = dr.get(TAG_DR_NM);
                 String dr_IP = dr.get(TAG_DR_IP);
+                int dr_Port = Integer.parseInt(dr.get(TAG_DR_PORT));
+                String dr_devName = dr.get(TAG_DR_DEV_NAME);
+                String dr_devMAC = dr.get(TAG_DR_DEV_MAC);
 
                 //Log.v("TASK: ", "getdrs " + dr_name);
 
                 // create and add door to door list for this floor
-                new_flr.addDoor(dr_name, door_margin_curr,dr_IP);
+                new_flr.addDoor(dr_name, door_margin_curr,dr_IP,dr_Port,dr_devName,dr_devMAC); //todo modify data structure
 
             }
         }
@@ -572,7 +579,9 @@ public class DB_Controller {
                         String mRight = c.getString(TAG_DR_MR);
                         String mBot = c.getString(TAG_DR_MB);
                         String drIP = c.getString(TAG_DR_IP);
-                        String drUUID = c.getString(TAG_DR_UUID);
+                        String drPort = c.getString(TAG_DR_PORT);
+                        String drDevName = c.getString(TAG_DR_DEV_NAME);
+                        String drDevMAC = c.getString(TAG_DR_DEV_MAC);
 
                         // creating new HashMap
                         HashMap<String, String> map = new HashMap<String, String>();
@@ -586,7 +595,9 @@ public class DB_Controller {
                         map.put(TAG_DR_MR, mRight);
                         map.put(TAG_DR_MB, mBot);
                         map.put(TAG_DR_IP, drIP);
-                        map.put(TAG_DR_UUID, drUUID);
+                        map.put(TAG_DR_PORT, drPort);
+                        map.put(TAG_DR_DEV_NAME, drDevName);
+                        map.put(TAG_DR_DEV_MAC, drDevMAC);
 
                         // adding HashList to ArrayList
                         doorList.add(map);
