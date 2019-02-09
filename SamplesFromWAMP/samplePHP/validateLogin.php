@@ -2,15 +2,16 @@
 
     $correct_flag = 0;
 
-    if(isset($_POST['ip']) && isset($_POST['user']) && isset($_POST['pass'])){
+    if(isset($_POST['user']) && isset($_POST['pass'])){
 
-      $serIP = (string)$_POST['ip'];
-
+      //$serIP = (string)$_POST['ip'];
+/*
       if($serIP == "10.0.2.2"){
         $serIP = "localhost";
       }
+      */
       //$serIP = "localhost";
-      define('SERVERNAME', $serIP);
+      //define('SERVERNAME', $serIP);
 
       $user = $_POST['user'];
       $pass = $_POST['pass'];
@@ -20,9 +21,10 @@
       // include db connect class
       require_once __DIR__ . '/db_config.php';
 
+      $serverNm = DB_SERVER_LOGINS;
       $tb_employee = TB_EMPLOYEETABLE;
 
-      $mysqli = mysqli_connect(SERVERNAME, DB_USER, DB_PASSWORD, DB_DATABASEEMPLOYEE);
+      $mysqli = mysqli_connect($serverNm, DB_USER, DB_PASSWORD, DB_DATABASEEMPLOYEE);
 
       // connecting to db
       //$mysqli = connect();

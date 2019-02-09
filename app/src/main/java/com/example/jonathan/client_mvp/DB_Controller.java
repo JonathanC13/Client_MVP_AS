@@ -335,7 +335,7 @@ public class DB_Controller {
                 //Log.v("TASK: ", "getdrs " + dr_name);
 
                 // create and add door to door list for this floor
-                new_flr.addDoor(dr_name, door_margin_curr,dr_IP,dr_Port,dr_devName,dr_devMAC); //todo modify data structure
+                new_flr.addDoor(dr_name, door_margin_curr,dr_IP,dr_Port,dr_devName,dr_devMAC);
 
             }
         }

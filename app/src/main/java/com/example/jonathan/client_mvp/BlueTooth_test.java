@@ -114,7 +114,7 @@ public class BlueTooth_test extends Activity {
                 // Before discovery, need to query the set of paired devices to have a record of the already known devices.
                 initializeDiscovery();
 
-                // todo, after discovery all done, the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
+                // after discovery all done, the data structure should be populated with doors that are currently in range. In the Set<BluetoothDevice> pairedDevices;
                 iterateBluetoothDevices(); // print in log to debug
                 // todo, When a door icon is clicked this data structure is searched and a connection is established and the data is exchanged.
                 // note, Android will probably be the client, since the door Pi will has a socket open and listening for requests.

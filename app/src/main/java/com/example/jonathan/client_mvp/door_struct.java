@@ -1,6 +1,7 @@
 package com.example.jonathan.client_mvp;
 
 
+import android.bluetooth.BluetoothDevice;
 import android.media.Image;
 import android.widget.ImageButton;
 
@@ -20,7 +21,9 @@ public class door_struct {
     private String dev_remoteName;
     private String dev_MAC;
 
-    private ImageButton btn_door;
+    private Btn_placed_door placed_btn = null;
+
+    private BluetoothDevice bt_dev = null;
 
     public door_struct(String dr_name, double[] dr_margin, String dr_IP, int dr_Port, String dev_remoteName, String dev_MAC){
         this.name = dr_name;
@@ -31,11 +34,39 @@ public class door_struct {
         this.dev_MAC = dev_MAC;
     }
 
-    public void setImageBtn(ImageButton btn){
-        this.btn_door = btn;
+    public void setBT_device(BluetoothDevice bt_device){
+        bt_dev = bt_device;
+    }
+
+    public void setImageButton(ImageButton imgBtn, int btnID){
+        placed_btn = new Btn_placed_door(imgBtn, btnID);
+    }
+
+    public void removeImageButtonObj(){
+        placed_btn = null;
     }
 
     // <Getters>
+    public BluetoothDevice getBt_dev() {
+        return bt_dev;
+    }
+
+    public ImageButton getImgBtn(){
+        if(placed_btn != null) {
+            return placed_btn.getBtn_door();
+        } else {
+            return null;
+        }
+    }
+
+    public int getBtnID(){
+        if(placed_btn != null) {
+            return placed_btn.getBtn_ID();
+        } else {
+            return -1;
+        }
+    }
+
     public String getDrName(){
         return name;
     }
@@ -69,10 +100,6 @@ public class door_struct {
     public String getDev_remoteName() { return dev_remoteName; }
 
     public String getDev_MAC() { return dev_MAC; };
-
-    public ImageButton getBtn(){
-        return btn_door;
-    }
     // </Getters>
 
 }

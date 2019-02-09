@@ -74,7 +74,7 @@ public class Data_Controller {
     private List<String> arr_flr_name = new ArrayList<String>();
 
     // List of placed doors
-    private List<button_struct> placed_doors = new ArrayList<button_struct>();
+    private List<door_struct> placed_doors = new ArrayList<door_struct>();
 
     // ScrollView internal layout
     ConstraintLayout grd_scr;
@@ -82,6 +82,11 @@ public class Data_Controller {
     Context currContext;
 
     FloorActivity calling_FloorAct;
+
+    //private String mConnectedDeviceName = null;
+    //private BlueTooth_service mTransferService = null;
+    //BluetoothAdapter mBluetoothAdapter;
+    private static final UUID MY_UUID_INSECURE = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
 
 
     public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, FloorActivity flrAct){
@@ -238,15 +243,18 @@ public class Data_Controller {
     // Clear doors from previous floor
     public void clear_prev_doors(Context main){
 
-        for(button_struct dr : placed_doors){
-            ImageButton curr_btn = (ImageButton) dr.getBtn();
+        for(door_struct dr : placed_doors){
+            ImageButton curr_btn = (ImageButton) dr.getImgBtn();
             grd_scr.removeView(curr_btn);
+
+            // nullify Image button obj, garbage collected
+            dr.removeImageButtonObj();
         }
     }
 
     private void place_curr_doors(int floor_sel, Context main){
 
-        placed_doors = new ArrayList<button_struct>();
+        placed_doors = new ArrayList<door_struct>();
 
         // refresh doors test, the process for refreshing on floor change if needed
         /*
@@ -315,8 +323,9 @@ public class Data_Controller {
 
                 // </Set button attributes>
 
-                button_struct btn_cr = new button_struct(btn_new, dr.getDrIP(), i, drDev_name);
-                placed_doors.add(btn_cr);
+
+                dr.setImageButton(btn_new, i);
+                placed_doors.add(dr);
 
                 i++;
             }
@@ -327,14 +336,24 @@ public class Data_Controller {
     private void generic_button_click(View v ) {
 
         final ImageButton IB = (ImageButton) v;
+
+        door_struct clickedDoor = null;
+        BluetoothDevice BT_dev = null;
         String button_IP = "";
+        String devName = "";
+        String devMAC = "";
+        int devPort = -1;
 
         // search button_struct placed_doors() List for the door and get its IP
-        for (button_struct btn : placed_doors) {
+        for (door_struct btn : placed_doors) {
 
-            if (IB.getId() == btn.getID()) {
-
-                button_IP = btn.getIP();
+            if (IB.getId() == btn.getBtnID()) {
+                clickedDoor = btn;
+                BT_dev = btn.getBt_dev();
+                button_IP = btn.getDrIP();
+                devName = btn.getDev_remoteName();
+                devMAC = btn.getDev_MAC();
+                devPort = btn.getDoor_Port();
                 break;
             }
         }
@@ -342,19 +361,29 @@ public class Data_Controller {
         Log.v("TASK: ", button_IP);
 
         // continue if employee card not "fail" since the Pi should automatically reject a packet with no card
-        if (employeeCard.equals(sp_fail)){ }
+        if (employeeCard.equals(sp_fail) || button_IP.equals("") || devName.equals("") || devMAC.equals("") || devPort == -1){
+            Log.v("Door click: ", "employee card was [" + employeeCard + "]. If [fail], then problem with employee DB or problem storing in app.");
+            Log.v("Door click: ", "Door DB properties.");
+            Log.v("Door click: ", "IP_door was [" + button_IP + "].");
+            Log.v("Door click: ", "dev_remName was [" + devName + "].");
+            Log.v("Door click: ", "dev_MAC was [" + devMAC + "].");
+            Log.v("Door click: ", "dev_port was [" + devPort + "].");
+        }
         else {
-            //String re_print = bt_testObj.refreshBT();
-            //Log.v("BT: ", "onClick: " + re_print);
+            Log.v("Door click: ", "Printing properties needed to operate udp and Bluetooth transport:");
+            Log.v("Door click: ", "Employee card: " + employeeCard);
+            Log.v("Door click: ", "IP_door: " + button_IP);
+            Log.v("Door click: ", "dev_remName: " + devName);
+            Log.v("Door click: ", "dev_MAC: " + devMAC);
+            Log.v("Door click: ", "dev_port: " + devPort);
 
 
-
-
-            /* UDP works, comment out to test bluetooth
+            // UDP works, comment out to test bluetooth
             // udp send to open door and wait for receive message
             Log.v("RESPONSE: ", "START");
-            //todo DB mod and add door properties
-            UDP_controller udpTask = new UDP_controller(button_IP, "RDR5, C6:I0:R2",65000, employeeCard);
+            //UDP_controller udpTask = new UDP_controller(button_IP, "RDR5, C6:I0:R2",65000, employeeCard);
+            UDP_controller udpTask = new UDP_controller(button_IP, devName, devPort, employeeCard);
+
             int response = udpTask.executeUDP(); // Starts async task for udp operation
             Log.v("RESPONSE: ", "Data_Controller returned: " + response);
             // need to determine success code
@@ -363,14 +392,10 @@ public class Data_Controller {
                 IB.setImageResource(R.drawable.open_door);
             } else {
                 // change to yellow to indicate problem and not open
+                IB.setImageResource(R.drawable.error_door);
             }
-            */
-        }
 
-        // if ack receive that door is opened, change color of door to green for "opened" time // May not wait for a response though
-        //if(response == 1){
-        //IB.setImageResource(R.drawable.open_door);
-        //} else { B.setImageResource(R.drawable.bluetooth_fail); }
+        }
 
         // Depending on how we lock the door change this. This wait initially caused an error, crashes the app.
         final Handler handler = new Handler();
@@ -385,7 +410,37 @@ public class Data_Controller {
 
 
 
-        // BT CONNECT TEST
+        // BT test
+        //String re_print = bt_testObj.refreshBT();
+        //Log.v("BT: ", "onClick: " + re_print);
+            /*
+            Boolean click_ret = calling_FloorAct.onClickBTcheck(clickedDoor, devMAC);
+            if(click_ret == false){
+                // attmept 1 refresh to see if it can discover it.
+                calling_FloorAct.BT_refresh();
+                click_ret = calling_FloorAct.onClickBTcheck(clickedDoor, devMAC); // look through discovered devices and attempt to pair if found.
+            }
+
+            // checks if device was paired and able to communicate.
+            UUID currUUID = null;
+            BluetoothDevice currDev = clickedDoor.getBt_dev();
+            if(click_ret == true){
+                //todo can send message
+                //currUUID = calling_FloorAct.getUUID(currDev);
+
+                //UUID yeet = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
+                calling_FloorAct.setupComms(currDev, MY_UUID_INSECURE);
+
+
+            } else {
+                // failed to pair and probably cannot send message
+            }
+            */
+        // bt test
+
+
+
+        // BT CONNECT TEST OLD ----------
 /*
         //String device_name = "Hwa Chan (Galaxy Tab4)";
         String device_name = "123";
@@ -496,87 +551,6 @@ public class Data_Controller {
     }
 
 
-    /*
-    private void setupComms(BluetoothDevice btD, UUID btID){
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(!mBluetoothAdapter.isEnabled()){
-            // message for BT is currently disabled
-        } else {
-            mTransferService = new BlueTooth_service(currContext, mHandler);
-            mTransferService.connect(btD, btID);
-        }
-    }
 
-    // Sends message to the remote device
-    // @param message a string of text to send
-    private void sendMessage(String message){
-
-        // check if connection is active
-        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
-            Log.v("TASK: ", "BT: SendMessage fail due to not connected");
-            return;
-        }
-
-        // Check that there's actually something to send
-        if(message.length() > 0){
-            // Get the message bytes and tell the Bluetooth_service to write
-            byte[] send = message.getBytes();
-            mTransferService.write(send);
-
-        }
-    }
-
-    // Create Handler that gets information back from the Bluetooth_service
-    private final Handler mHandler = new Handler(){
-        @Override
-        public void handleMessage(Message msg){
-            switch (msg.what){
-                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
-                    switch (msg.arg1) {
-                        case BlueTooth_service.STATE_CONNECTED:
-                            Log.v("TASK: ", "BT: Connected to: " + mConnectedDeviceName);
-                            //BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
-                            break;
-                        case BlueTooth_service.STATE_CONNECTING:
-                            Log.v("TASK: ", "BT: Connecting");
-                            break;
-                        case BlueTooth_service.STATE_LISTEN:
-                            // check next case
-                        case BlueTooth_service.STATE_NONE:
-                            Log.v("TASK: ", "BT: Not connected");
-                            break;
-
-                        default:
-                            break;
-
-                    }
-                    break;
-                case Bluetooth_constants.MESSAGE_WRITE:
-                    byte[] writeBuf = (byte[]) msg.obj;
-                    // construct a string from the valid bytes
-                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
-
-                    break;
-                case Bluetooth_constants.MESSAGE_READ:
-                    byte[] readBuf = (byte[])msg.obj;
-                    // construct a string from the valid bytes in the buffer
-                    // this is the response from the remote device
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-
-                    // todo, analyze the contents and determine what to do
-
-                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
-                    break;
-                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
-                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
-                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
-                    break;
-                case Bluetooth_constants.MESSAGE_TOAST:
-                    break;
-
-            }
-        }
-    };
-    */
 
 }

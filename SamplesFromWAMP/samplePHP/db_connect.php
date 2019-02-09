@@ -16,16 +16,23 @@
 
     /**
      * Function to connect with database
-     */ //$firstTime, $IP
-    function connect($serverNm) {
+     */
+    function connect($choose_server) {
         // import database connection variables
 
         require_once __DIR__ . '/db_config.php';
 
+/*
         if($serverNm == "10.0.2.2"){
           $serverName = "localhost";
         } else {
           $serverName = $serverNm;
+        }
+*/
+        if($choose_server == "LOGIN"){
+          $serverName = DB_SERVER_LOGINS;
+        } else if($choose_server == "FLOOR"){
+          $serverName = DB_SERVER_FLOORS;
         }
 
         // Connecting to mysql server and select database

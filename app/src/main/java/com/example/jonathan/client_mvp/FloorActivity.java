@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.ParcelUuid;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -39,16 +40,18 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 public class FloorActivity extends AppCompatActivity {
 
 
     // Bluetooth discovery
-    //private String mConnectedDeviceName = null;
-    //private BlueTooth_service mTransferService = null;
+    private String mConnectedDeviceName = null;
+    private BlueTooth_service mTransferService = null;
     BluetoothAdapter mBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices; // query list for paired bluetooth devices
     private Set<BluetoothDevice> discoveredDevices; // query list for discovered bluetooth devices
@@ -219,7 +222,7 @@ public class FloorActivity extends AppCompatActivity {
         this.refreshData();
 
         // <Initial Bluetooth scan>
-        this.BT_refresh();
+        //this.BT_refresh();
         // </Initial Bluetooth scan>
 
         // Listeners below
@@ -478,12 +481,17 @@ public class FloorActivity extends AppCompatActivity {
 
     }
 
+
     // <Bluetooth>
     // Bluetooth refresh procedure
-    private void BT_refresh(){
+    public void BT_refresh(){
         if(mBluetoothAdapter == null){
             mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         }
+        // fill the Set for already paired devices
+        pairedDevices = mBluetoothAdapter.getBondedDevices(); // Return the set of BluetoothDevice objects that are bonded (paired) to the local adapter. Stores them in Set<BluetoothDevice>
+        // print for logging
+        iteratePairedDevices();
         this.initializeDiscovery(); // discovers devices, when it ends the pairedDevices set and discoveredDevices set are filled. Then we try to pair all relevant devices that are doors
     }
 
@@ -497,6 +505,8 @@ public class FloorActivity extends AppCompatActivity {
         mBluetoothAdapter.startDiscovery(); // has a timer, base inquiry scan of about 12 seconds and then it does a page scan of each device found to retrieve its bluetooth information.
         Log.v("BT: ", "</initializeDiscovery>");
     }
+
+
 
     // Intent for startDiscovery
     // create a BroadcastReceiver for ACTION_FOUND
@@ -512,9 +522,9 @@ public class FloorActivity extends AppCompatActivity {
                 // Discovery has found a device. Get the Bluetooth device
                 // object and its info from intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                //String deviceName = device.getName();
-                //String deviceHardwareAddress = device.getAddress(); // MAC address
-                //Log.v("BT: ", "<> Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                String deviceName = device.getName();
+                String deviceHardwareAddress = device.getAddress(); // MAC address
+                Log.v("BT: ", "<> Discovered: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
                 // Add the discovered device to the Set
                 discoveredDevices.add(device);
 
@@ -529,43 +539,11 @@ public class FloorActivity extends AppCompatActivity {
                     }
                     iterateDiscoveredDevices();
 
-                    // fill the Set for already paired devices
-                    pairedDevices = mBluetoothAdapter.getBondedDevices(); // Return the set of BluetoothDevice objects that are bonded (paired) to the local adapter. Stores them in Set<BluetoothDevice>
-                    // print for logging
-                    iteratePairedDevices();
+                    //
+                    attemptPairAll();
 
 
-                    // todo here we can try to do the pairing to the door devices that haven't been paired
-                    BluetoothDevice foundDev = null;
-                    if(discoveredDevices.size() > 0){
-                        Log.v("BT: ", "dis List");
-                        for(BluetoothDevice disDev : discoveredDevices){
-                            String s_devName = disDev.getName();
 
-                            //Log.v("BT: ", "list Name: " + disDev.getName());
-                            if(s_devName != null) {
-                                if (s_devName.equals("RPi-W23-b827eb1789e5")) {
-                                    foundDev = disDev;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if(foundDev != null) {
-                        Boolean isBonded = false;
-                        try {
-                            isBonded = createBond(foundDev);
-                            if (isBonded) {
-                                //arrayListpaired.add(bdDevice.getName()+"\n"+bdDevice.getAddress());
-                                //adapter.notifyDataSetChanged();
-                                Log.v("BT: ", "BONDED ");
-                                iteratePairedDevices();
-                                //adapter.notifyDataSetChanged();
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }//connect(bdDevice);
-                    }
 
                     // pairing without user prompting, auto
 
@@ -582,6 +560,231 @@ public class FloorActivity extends AppCompatActivity {
         }
     };
 
+    // operation:int, is to determine what function to perfrom, if 0 only scan and validate, if 1 scan, validate, and then attempt to send message
+    public boolean onClickBTcheck(door_struct dr, String devMAC){
+
+        Log.v("BT START: ", "==");
+        Log.v("BT START: ", "onClickBTcheck > Start" );
+
+        if (mBluetoothAdapter.isDiscovering()) {
+            Log.v("BT: ", "<attemptPair> Discovery cancel");
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        BluetoothDevice btDev_placeholder = null;
+        BluetoothDevice currentBT_dev = dr.getBt_dev();
+
+        boolean pairedStatus = false;
+
+        Log.v("BT START: ", "onClickBTcheck > Looking for device [" + currentBT_dev + "] or MAC [" + devMAC + "] in paired devices");
+
+        if(currentBT_dev == null){
+            // since null, need to check with MAC
+            btDev_placeholder = checkPairedMAC(devMAC);
+            if(btDev_placeholder != null){
+                dr.setBT_device(btDev_placeholder);
+                Log.v("BT START: ", "onClickBTcheck > Found device [" + btDev_placeholder + "] or MAC [" + devMAC + "] in paired devices through MAC");
+                pairedStatus = true;
+            } else {
+                Log.v("BT START: ", "onClickBTcheck > Not found through MAC");
+                pairedStatus = false;
+            }
+        } else {
+            // need to confirm still paired
+            pairedStatus = checkPairedDev(currentBT_dev);
+
+            if (pairedStatus == false){
+                Log.v("BT START: ", "onClickBTcheck > Not found in paired through device");
+                // can try with MAC
+                btDev_placeholder = checkPairedMAC(devMAC);
+                if(btDev_placeholder != null){
+                    dr.setBT_device(btDev_placeholder);
+                    Log.v("BT START: ", "onClickBTcheck > Found device [" + btDev_placeholder + "] or MAC [" + devMAC + "] in paired devices through MAC");
+                    pairedStatus = true;
+                } else {
+                    Log.v("BT START: ", "onClickBTcheck > Not found through MAC");
+                    pairedStatus = false;
+                }
+            } else {
+                Log.v("BT START: ", "onClickBTcheck > Found device [" + currentBT_dev + "] or MAC [" + devMAC + "] in paired devices, through Device");
+            }
+        }
+
+
+        Log.v("BT START: ", "> Discovery queue ><");
+        boolean foundInDis = false;
+        // if paired, message can be sent
+        if(pairedStatus == true){
+            Log.v("BT START: ", "onClickBTcheck > PAIRED already, device [" + currentBT_dev + "] or MAC [" + devMAC + "] in paired devices");
+            foundInDis = true;
+            return foundInDis;
+
+        } else {
+
+            Log.v("BT START: ", "onClickBTcheck > Looking for device [" + currentBT_dev + "] or MAC [" + devMAC + "] in discovered devices");
+            // if not paired attempt to look in discovered and pair
+            if(currentBT_dev == null){
+                // have to use MAC
+                btDev_placeholder = checkDiscMAC(devMAC);
+                if(btDev_placeholder != null){
+                    dr.setBT_device(btDev_placeholder);
+                    Log.v("BT START: ", "onClickBTcheck > Found device [" + btDev_placeholder + "] or MAC [" + devMAC + "] in discovered devices through MAC");
+                    foundInDis = true;
+                } else {
+                    Log.v("BT START: ", "onClickBTcheck > Not found through MAC");
+                    foundInDis = false;
+                }
+            } else {
+                // use BT device, if found in discovered it will attempt to bond
+                boolean pair_ret = checkDiscoveredDev(currentBT_dev);
+
+                if (pair_ret == false){
+                    Log.v("BT START: ", "onClickBTcheck > Not found in discovered through device");
+                    // not found
+                    // can try with MAC
+                    btDev_placeholder = checkDiscMAC(devMAC);
+                    if(btDev_placeholder != null){
+
+                        dr.setBT_device(btDev_placeholder);
+                        Log.v("BT START: ", "onClickBTcheck > Found device [" + btDev_placeholder + "] or MAC [" + devMAC + "] in discovered devices through MAC");
+                        foundInDis = true;
+                    } else {
+                        Log.v("BT START: ", "onClickBTcheck > Not found in discovered through MAC");
+                        foundInDis = false;
+                    }
+                } else if(pair_ret == true){
+                    dr.setBT_device(currentBT_dev);
+                    Log.v("BT START: ", "onClickBTcheck > Found device [" + currentBT_dev + "] or MAC [" + devMAC + "] in discovered devices through device");
+                    foundInDis = true;
+                }
+            }
+
+            Log.v("BT START: ", "==");
+
+        }
+
+        if (foundInDis == true){
+            btDev_placeholder = dr.getBt_dev();
+            Boolean createdPair = false;
+            try {
+                createdPair = createBond(btDev_placeholder);
+            } catch(Exception e){}
+
+            Log.v("BT START: ", "onClickBTcheck > paired end ><" );
+            return createdPair;
+
+        } else {
+            Log.v("BT START: ", "onClickBTcheck > not found end ><" );
+           return false;
+        }
+    }
+
+    private boolean checkDiscoveredDev(BluetoothDevice bt_dev){
+
+        return (discoveredDevices.contains(bt_dev));
+
+    }
+
+    private boolean checkPairedDev(BluetoothDevice bt_dev){
+        return (pairedDevices.contains(bt_dev));
+    }
+
+    // looks through paired doors and checks if it was paired, if not then looks through discovered devices.
+    public void attemptPairAll(){
+        for (Data_Collection flr: dataPull.flr_dr_class_list){
+            for (door_struct dr : flr.arr_doors){
+                onClickBTcheck(dr, dr.getDev_MAC());
+
+                /*
+                String devMAC = dr.getDev_MAC();
+                // check if device is paired
+                BluetoothDevice alreadyPaired = checkPairedMAC(devMAC);
+                dr.setBT_device(alreadyPaired); // even if null, to reset state
+
+                if(alreadyPaired == null){
+                    // Was not paired
+                    // look in discovered devices
+                    BluetoothDevice foundInDiscovered = attemptPairMAC(devMAC);
+                    dr.setBT_device(foundInDiscovered);
+                }
+                */
+                // by now, either a door has a bluetooth device paired or null to indicate it was unable to pair or not discovered
+            }
+        }
+    }
+
+    // searches discovered devices for the specified device
+    public BluetoothDevice attemptPairMAC(String devMAC){
+        if (mBluetoothAdapter.isDiscovering()) {
+            Log.v("BT: ", "<attemptPair> Discovery cancel");
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        BluetoothDevice foundDev = null;
+        if(discoveredDevices.size() > 0){
+            Log.v("BT: ", "dis List");
+            for(BluetoothDevice disDev : discoveredDevices){
+                String s_devMAC = disDev.getAddress();
+
+                //Log.v("BT: ", "list Name: " + disDev.getName());
+                if(s_devMAC != null) {
+                    if (s_devMAC.equals(devMAC)) {
+                        foundDev = disDev;
+                        break;
+                    }
+                }
+            }
+        }
+        if(foundDev != null) {
+            Boolean isBonded = false;
+            try {
+                isBonded = createBond(foundDev);
+                if (isBonded) {
+                    //arrayListpaired.add(bdDevice.getName()+"\n"+bdDevice.getAddress());
+                    //adapter.notifyDataSetChanged();
+                    Log.v("BT: ", "BONDED ");
+                    pairedDevices.add(foundDev);
+                    iteratePairedDevices();
+                    //adapter.notifyDataSetChanged();
+                    return foundDev;
+                } else {
+                    return null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }//connect(bdDevice);
+        } else {
+            return null;
+        }
+    }
+
+    public BluetoothDevice checkDiscMAC(String devMAC){
+        if (mBluetoothAdapter.isDiscovering()) {
+            Log.v("BT: ", "<checkPaired> Discovery cancel");
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        for(BluetoothDevice btDev : discoveredDevices){
+            if(devMAC.equals(btDev.getAddress())){
+                return btDev;
+            }
+        }
+        return null;
+    }
+
+    public BluetoothDevice checkPairedMAC(String devMAC){
+        if (mBluetoothAdapter.isDiscovering()) {
+            Log.v("BT: ", "<checkPaired> Discovery cancel");
+            mBluetoothAdapter.cancelDiscovery();
+        }
+        if(pairedDevices != null) {
+            for (BluetoothDevice btDev : pairedDevices) {
+                if (devMAC.equals(btDev.getAddress())) {
+                    return btDev;
+                }
+            }
+        }
+        return null;
+    }
+
     public boolean createBond(BluetoothDevice btDevice)
             throws Exception
     {
@@ -592,29 +795,117 @@ public class FloorActivity extends AppCompatActivity {
     }
 
     private void iteratePairedDevices(){
-        if (pairedDevices.size() > 0) {
-            // There are paired devices. Get the name and address of each paired device.
-            for (BluetoothDevice device : pairedDevices) {
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
-                // Unadvised to connect while performing device discovery since discovery uses a lot of the Bluetooth adapter's resources, use cancelDiscovery() to cancel
-                // Unadvised to initiate a discovery if there is a device connected because it will reduce the bandwidth available for the existing connections.
-                //Log.v("BT: ", "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
-                Log.v("BT: ","Paired - Query paired: Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+        if(pairedDevices != null) {
+            if (pairedDevices.size() > 0) {
+                // There are paired devices. Get the name and address of each paired device.
+                for (BluetoothDevice device : pairedDevices) {
+                    String deviceName = device.getName();
+                    String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
+                    // Unadvised to connect while performing device discovery since discovery uses a lot of the Bluetooth adapter's resources, use cancelDiscovery() to cancel
+                    // Unadvised to initiate a discovery if there is a device connected because it will reduce the bandwidth available for the existing connections.
+                    //Log.v("BT: ", "Query: Name: " + deviceName + ".MAC: " + deviceHardwareAddress);
+                    Log.v("BT: ", "Paired - Query paired: Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+                }
             }
         }
     }
 
     private void iterateDiscoveredDevices(){
-        if (discoveredDevices.size() > 0) {
-            // There are paired devices. Get the name and address of each paired device.
-            for (BluetoothDevice device : discoveredDevices) {
-                String deviceName = device.getName();
-                String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
-                Log.v("BT: ","Discovered - Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+        if(discoveredDevices != null) {
+            if (discoveredDevices.size() > 0) {
+                // There are paired devices. Get the name and address of each paired device.
+                for (BluetoothDevice device : discoveredDevices) {
+                    String deviceName = device.getName();
+                    String deviceHardwareAddress = device.getAddress(); // the MAC address. All you need to initiate a connection with a Bluetooth device
+                    Log.v("BT: ", "Discovered - Name: " + deviceName + ". MAC: " + deviceHardwareAddress + "\n");
+                }
             }
         }
     }
+
+    public void setupComms(BluetoothDevice btD, UUID btID){
+        if(mBluetoothAdapter == null) {
+            mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
+
+        if(!mBluetoothAdapter.isEnabled()){
+            // message for BT is currently disabled
+        } else {
+            mTransferService = new BlueTooth_service(context, mHandler, mBluetoothAdapter);
+            mTransferService.connect(btD, btID);
+        }
+    }
+
+    // Sends message to the remote device
+    // @param message a string of text to send
+    private void sendMessage(String message){
+
+        // check if connection is active
+        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
+            Log.v("TASK: ", "BT: SendMessage fail due to not connected");
+            return;
+        }
+
+        // Check that there's actually something to send
+        if(message.length() > 0){
+            // Get the message bytes and tell the Bluetooth_service to write
+            byte[] send = message.getBytes();
+            mTransferService.write(send);
+
+        }
+    }
+
+    // Create Handler that gets information back from the Bluetooth_service
+    private final Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg){
+            switch (msg.what){
+                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
+                    switch (msg.arg1) {
+                        case BlueTooth_service.STATE_CONNECTED:
+                            Log.v("TASK: ", "BT: Connected to: " + mConnectedDeviceName);
+                            //BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
+                            break;
+                        case BlueTooth_service.STATE_CONNECTING:
+                            Log.v("TASK: ", "BT: Connecting");
+                            break;
+                        case BlueTooth_service.STATE_LISTEN:
+                            // check next case
+                        case BlueTooth_service.STATE_NONE:
+                            Log.v("TASK: ", "BT: Not connected");
+                            break;
+
+                        default:
+                            break;
+
+                    }
+                    break;
+                case Bluetooth_constants.MESSAGE_WRITE:
+                    byte[] writeBuf = (byte[]) msg.obj;
+                    // construct a string from the valid bytes
+                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
+
+                    break;
+                case Bluetooth_constants.MESSAGE_READ:
+                    byte[] readBuf = (byte[])msg.obj;
+                    // construct a string from the valid bytes in the buffer
+                    // this is the response from the remote device
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+
+                    // todo, analyze the contents and determine what to do
+
+                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
+                    break;
+                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
+                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
+                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
+                    break;
+                case Bluetooth_constants.MESSAGE_TOAST:
+                    break;
+
+            }
+        }
+    };
 
     @Override
     protected void onDestroy(){

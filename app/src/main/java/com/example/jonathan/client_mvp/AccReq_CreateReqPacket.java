@@ -10,6 +10,8 @@ public class AccReq_CreateReqPacket {
     private byte[] b_req_msg;
     private int currPacket_SIZE = 0;
 
+    private static final int senderPort = 69;
+
     AccReq_packet_props pack_props;
 
 
@@ -34,17 +36,20 @@ public class AccReq_CreateReqPacket {
 
         AccReq_Header AR_header = new AccReq_Header(pack_props);
         AR_header.setCmd(pack_props.UNICAST_ACC_REQ_CMD);
-        AR_header.setSenderDeviceAddr(s_senderIP, 69);
-        AR_header.setDestDeviceAddr("192.168.2.21", 65000);
-        AR_header.setMsgSequenceNum( 0);
+        AR_header.setSenderDeviceAddr(s_senderIP, senderPort);
+        //AR_header.setDestDeviceAddr("192.168.2.21", 65000);
+        AR_header.setDestDeviceAddr(dest_ip, dest_port);
+        AR_header.setMsgSequenceNum(0);
         AR_header.setMsgSignature();
         AR_header.setTimeStamp();
         //AR_header.setBodyByteCount(IDX_BCNT, 260);
 
         AccReq_Body AR_body = new AccReq_Body(pack_props);
         AR_body.setRandomNum();
-        AR_body.setDevName( "RDR5, C6:I0:R2");
-        AR_body.setCardNum("41165377");
+        //AR_body.setDevName( "RDR5, C6:I0:R2");
+        AR_body.setDevName(dest_device_name);
+        //AR_body.setCardNum("41165377");
+        AR_body.setCardNum(card_id);
         AR_body.set1CompCardNum();
         AR_body.compactBody();
 

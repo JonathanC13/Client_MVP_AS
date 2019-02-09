@@ -100,10 +100,12 @@ public class AccessRequest {
         String herdcodedip = "192.168.2.21";
         int hardcodedport= 65000;
         try {
-            remoteaddr = InetAddress.getByName(herdcodedip);
+            //remoteaddr = InetAddress.getByName(herdcodedip);
+            remoteaddr = InetAddress.getByName(dest_ip);
             transferSocket = new DatagramSocket();
 
-            DatagramPacket packet_send = new DatagramPacket(sendPacket, sendPacket.length, remoteaddr, hardcodedport);
+            //DatagramPacket packet_send = new DatagramPacket(sendPacket, sendPacket.length, remoteaddr, hardcodedport);
+            DatagramPacket packet_send = new DatagramPacket(sendPacket, sendPacket.length, remoteaddr, dest_port);
 
             //Log.v("PACEKT:", "sending " + AccReq_packet_props.unpackByteArr(sendPacket));
 
