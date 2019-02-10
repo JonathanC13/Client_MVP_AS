@@ -55,7 +55,7 @@ public class AccReq_Body {
         return bodyBuffer;
     }
 
-    // todo do this cause we dont know final static msg? Ask about sizing variables
+    // todo. do this cause we dont know final static msg? Ask about sizing variables
     public void compactBody(){
         if(currentBody_SIZE > 0 && currentBody_SIZE < i_MAX_MSG_BODY_SIZE){
             byte[] tmp = new byte[currentBody_SIZE];

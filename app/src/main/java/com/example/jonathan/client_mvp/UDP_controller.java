@@ -63,7 +63,7 @@ public class UDP_controller {
         protected Integer doInBackground(Void... args) {
 
             AccessRequest AR = new AccessRequest();
-            //int successflag = AR.send_request(remoteAddress, remotePort, deviceName, employee_id_toSend);
+
             // String ip, String device_name,int port, String card_id)
             int successflag = AR.test_request(s_remoteAddress, s_rem_deviceName, i_remotePort, s_empCard);
             return successflag;

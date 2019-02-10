@@ -6,9 +6,9 @@
  */
 
 
-if(isset($_POST['ip'])) {
+//if(isset($_POST['ip'])) {
 
-  $serverNm = (string)$_POST['ip'];
+  //$serverNm = (string)$_POST['ip'];
   //$serverNm = "localhost";
   // array for JSON response
   $response = array();
@@ -17,10 +17,11 @@ if(isset($_POST['ip'])) {
   require_once __DIR__ . '/db_config.php';
   include 'db_connect.php';
 
+  $serverNm = DB_SERVER_FLOORS;
   $tb_floor = TB_FLOORSTABLE;
 
   // connecting to db
-  $mysqli = connect($serverNm);
+  $mysqli = connect("FLOOR");
 
   // get all products from products table
   //$result = $db->query("SELECT * FROM floor_collection_0");
@@ -78,7 +79,7 @@ if(isset($_POST['ip'])) {
   }
 
   close($mysqli);
-}
+//}
 
 /*
 // check for empty result

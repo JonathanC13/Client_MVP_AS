@@ -49,7 +49,7 @@
     <string name="j_flrPath">img_path</string>
     <string name="j_flrDr">iddoor</string>
     <!-- /floor columns -->
-    <!-- door columns -->
+    <!-- door columns, match JSON keys -->
     <string name="j_arrDr">arr_doors</string>
     <string name="j_drPID">iddr</string>
     <string name="j_drNm">nm_door</string>
@@ -59,10 +59,14 @@
     <string name="j_drMR">MarginRight</string>
     <string name="j_drMB">MarginBot</string>
     <string name="j_drIP">IP_door</string>
-    <string name="j_drUUID">IP_door</string>
-    <string name="title_activity_log_in_one_time">LogIn_oneTIme</string>
+    <string name="j_drPort">dev_port</string>
+    <string name="j_drDevName">dev_remName</string>
+    <string name="j_drDevMAC">dev_MAC</string>
     <!-- /door columns -->
     <!-- /JSON node names -->
+
+    <string name="title_activity_log_in_one_time">LogIn_oneTIme</string>
+
 
     <!-- Floor screen buttons -->
     <string name="s_btn_lvlUp">Level Up</string>
