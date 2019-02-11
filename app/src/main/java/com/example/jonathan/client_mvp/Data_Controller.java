@@ -393,7 +393,7 @@ public class Data_Controller {
                 Log.v("Door click: ", "dev_port: " + devPort);
 
 
-
+/*
                 // UDP works, comment out to test bluetooth. todo, test udp 1 more time (Test single, multiple simultaneous click on multiple button and on same button), then commit to master
                 // udp send to open door and wait for receive message
                 Log.v("RESPONSE: ", "START");
@@ -422,14 +422,14 @@ public class Data_Controller {
                         calling_FloorAct.iconClosedDoor(IB);
                     }
                 }, 5000);
-
+*/
 
 
 
                 // BT test
                 //String re_print = bt_testObj.refreshBT();
                 //Log.v("BT: ", "onClick: " + re_print);
-/*
+
             Boolean click_ret = calling_FloorAct.onClickBTcheck(clickedDoor, devMAC);
             if(click_ret == false){
                 // attmept 1 refresh to see if it can discover it.
@@ -452,7 +452,7 @@ public class Data_Controller {
                 // failed to pair and probably cannot send message
                 calling_FloorAct.iconClosedDoor(IB);
             }
-*/
+
                 // bt test
 
                 // bt test 2
