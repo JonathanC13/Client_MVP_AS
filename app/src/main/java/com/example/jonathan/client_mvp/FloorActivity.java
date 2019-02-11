@@ -826,7 +826,7 @@ public class FloorActivity extends AppCompatActivity {
         }
     }
 
-    public void setupComms(BluetoothDevice btD, UUID btID){
+    public void setupComms(BluetoothDevice btD, UUID btUUID){
         if(mBluetoothAdapter == null) {
             mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         }
@@ -835,7 +835,7 @@ public class FloorActivity extends AppCompatActivity {
             // message for BT is currently disabled
         } else {
             mTransferService = new BlueTooth_service(context, mHandler, mBluetoothAdapter);
-            mTransferService.connect(btD, btID);
+            mTransferService.connect(btD, btUUID);
         }
     }
 
