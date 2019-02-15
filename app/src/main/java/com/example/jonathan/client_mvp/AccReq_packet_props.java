@@ -47,6 +47,11 @@ public class AccReq_packet_props {
     protected static final int IDX_CN = 132;
     protected static final int IDX_1CN = 196;
 
+    //response codes
+    protected static final int CMD_OK = 4096;
+    protected static final int CMD_ERROR_ID_IDCOMPL_NOT_MATCH = 8193;
+    protected static final int CMD_ERROR_REMOTE_ACCESS_DENIED = 8194;
+
     public AccReq_packet_props(){
 
 

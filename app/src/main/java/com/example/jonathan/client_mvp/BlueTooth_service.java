@@ -40,9 +40,9 @@ public class BlueTooth_service {
     public static final int STATE_CONNECTING = 2;   //now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;    // now connected to a remote device
 
-    public BlueTooth_service (Context context, Handler handler, BluetoothAdapter mAdap){
+    public BlueTooth_service (Context context, Handler handler){
         //mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        mBluetoothAdapter = mAdap;
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
         mNewState = mState;
         mHandler = handler;
@@ -214,11 +214,12 @@ public class BlueTooth_service {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
+
         public BT_ConnectThread(BluetoothDevice device, UUID currUUID) {
             BluetoothSocket tmp = null; // since mmSocket is final need a temp object.
             mmDevice = device;
 
-            UUID currUUIDNEW = device.getUuids()[0].getUuid();
+            //UUID currUUIDNEW = device.getUuids()[0].getUuid();
             //Log.v(TAG, "THE UUID IS " + currUUID.toString() + " .OTHER: " + device.getUuids()[0].getUuid());
             Log.v(TAG, "Initializing RFCOMM");
             try {
@@ -316,6 +317,16 @@ public class BlueTooth_service {
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
             mState = STATE_CONNECTED;
+
+            if(mmSocket == null){
+                Log.v(TAG, "socket null");
+            }
+            if(mmInStream == null){
+                Log.v(TAG, "In stream null");
+            }
+            if(mmOutStream == null){
+                Log.v(TAG, "out stream null");
+            }
         }
 
         // Run thread
@@ -324,22 +335,29 @@ public class BlueTooth_service {
             int numBytes; // bytes returned from read()
 
             // Keep listening to the InputStream until exception occurs
+
             while(mState == STATE_CONNECTED){
+                // todo, Right now loops until app makes "write" request
+
+
                 try {
 
                     // ON CONNECTION, KEEP THIS IF ANDROID IS EXPECTING MESSAGE FROM REMOTE DEVICE WHEN IT CONNECTS
                     //      ELSE THIS IS THE PROCESS TO READ FROM THE BUFFER
                     // Read from the InputStream
-                    numBytes = mmInStream.read(mmBuffer);
+                    numBytes = mmInStream.read(mmBuffer); // todo SOCKET CLOSED for some reason. test again but with PI
 
                     // Send the obtained bytes to the UI activity
                     // Dont know what is happening here
                     // Dont understand Message Class
                     //  assuming its just a header or something with info that can be parsed
                     Message readMsg = mHandler.obtainMessage(Bluetooth_constants.MESSAGE_READ, numBytes, -1, mmBuffer);
-                    readMsg.sendToTarget(); // dont know what this really does
+                    readMsg.sendToTarget(); // dont know what this really does. sendToTarget() will use a previously specified Handler and invoke its sendMessage()
+
                 } catch (IOException e){
                     Log.v(TAG, "Input stream was disconnected", e);
+                    connectionLost();
+                    break;
                 }
             }
         }

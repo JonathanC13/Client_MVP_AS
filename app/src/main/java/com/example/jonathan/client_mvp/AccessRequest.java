@@ -62,10 +62,6 @@ public class AccessRequest {
     private static final int IDX_1CN = 196;
     */
 
-    private static final int CMD_OK = 4096;
-    private static final int CMD_ERROR_ID_IDCOMPL_NOT_MATCH = 8193;
-    private static final int CMD_ERROR_REMOTE_ACCESS_DENIED = 8194;
-
     DatagramSocket transferSocket;
 
     public AccessRequest(){
@@ -97,8 +93,8 @@ public class AccessRequest {
 
         InetAddress myaddr, remoteaddr;
 
-        String herdcodedip = "192.168.2.21";
-        int hardcodedport= 65000;
+        //String herdcodedip = "192.168.2.21";
+        //int hardcodedport= 65000;
         try {
             //remoteaddr = InetAddress.getByName(herdcodedip);
             remoteaddr = InetAddress.getByName(dest_ip);
@@ -132,16 +128,16 @@ public class AccessRequest {
 
             switch(cmdCode) // based on the message command, create a return message and send it
             {
-                case CMD_OK:    // cmd 4096
+                case AccReq_packet_props.CMD_OK:    // cmd 4096
                     Log.v("RESPONSE: ", "udp_buf CMD_OK received: " + AccReq_packet_props.unpackByteArr(AR_B.getBodyFromMsg(packetLen)) + ": with " + packetLen + " bytes.");
                     // THis command meaning request accepted and door open?
                     transferSocket.close();
                     return 1;
 
-                case CMD_ERROR_ID_IDCOMPL_NOT_MATCH:
+                case AccReq_packet_props.CMD_ERROR_ID_IDCOMPL_NOT_MATCH:
                     Log.v("RESPONSE: ", "udp_buf CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
                     break;
-                case CMD_ERROR_REMOTE_ACCESS_DENIED:
+                case AccReq_packet_props.CMD_ERROR_REMOTE_ACCESS_DENIED:
                     Log.v("RESPONSE: ", "udp_buf CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
                     break;
                 default:

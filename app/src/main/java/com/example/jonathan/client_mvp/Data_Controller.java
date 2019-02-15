@@ -51,6 +51,10 @@ import android.widget.RelativeLayout.LayoutParams;
 // todo 1.Check if connect and connected works. 2.need way to test read and write - Fill packet with valid data and send to a stub to print.
 public class Data_Controller {
 
+    Semaphore BTconnectedSem; // semaphore to block until connection to desired BT device is made before doing any transfers
+    //Semaphore BTcurrentDevSem; // semaphore to manage the queue for the devices
+    //ArrayList<ImageButton> queuedBtns = new ArrayList<ImageButton>();
+
     // <File system info>
     private String curr_app_dir;
     private String image_folder;
@@ -85,12 +89,16 @@ public class Data_Controller {
     FloorActivity calling_FloorAct;
 
     private String mConnectedDeviceName = null;
-    private BlueTooth_service mTransferService = null;
+    //private BlueTooth_service mTransferService = null;
+    private BluetoothChatService mTransferService = null;
     BluetoothAdapter mBluetoothAdapter;
-    private static final UUID MY_UUID_INSECURE = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
+    private static final UUID MY_UUID_INSECURE = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+            //"0000110a-0000-1000-8000-00805f9b34fb");
 
 
     public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, FloorActivity flrAct){
+        //BTcurrentDevSem = new Semaphore(1);
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         //Calling activity handles bluetooth
         calling_FloorAct = flrAct;
@@ -385,6 +393,7 @@ public class Data_Controller {
                 Log.v("Door click: ", "dev_port was [" + devPort + "].");
             }
             else {
+                //clickedBtn = IB;
                 Log.v("Door click: ", "Printing properties needed to operate udp and Bluetooth transport:");
                 Log.v("Door click: ", "Employee card: " + employeeCard);
                 Log.v("Door click: ", "IP_door: " + button_IP);
@@ -413,15 +422,7 @@ public class Data_Controller {
                 }
 
                 // Depending on how we lock the door change this. This wait initially caused an error, crashes the app.
-                final Handler handler = new Handler(Looper.getMainLooper());
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Do something after 5s = 5000ms
-                        // change door to closed icon
-                        calling_FloorAct.iconClosedDoor(IB);
-                    }
-                }, 5000);
+                setDoorClosed();
 */
 
 
@@ -429,23 +430,117 @@ public class Data_Controller {
                 // BT test
                 //String re_print = bt_testObj.refreshBT();
                 //Log.v("BT: ", "onClick: " + re_print);
+/*
+                queuedBtns.add(IB); // queue for the buttons clicked if more clicked while a transfer is still in progress
+                try {
+                    BTcurrentDevSem.acquire();
+                    if(queuedBtns.size() > 0) {
+                        clickedBtn = queuedBtns.remove(0);
+                    } else {
+                        clickedBtn = IB;
+                    }
+                } catch (InterruptedException e){
 
-            Boolean click_ret = calling_FloorAct.onClickBTcheck(clickedDoor, devMAC);
+                }
+*/
+            // todo, FIRST THING, test paired list, discovered list.
+            // Test RPi connection, 1. turn on discoverable on RPi, 2. Start this app, it should try and auto pair.
+            // 3. replace busy waiting for connected BT
+            Boolean click_ret = false;
+
+            // look in the paired list first
+            click_ret = calling_FloorAct.checkPairedList(clickedDoor);
+
+            if(click_ret == false) {
+                //if not paired already, need to search discovered devices, this requires waiting if the discovered list is being used
+                try {
+                    calling_FloorAct.discoveredList_sem.acquire(); //
+                    Log.v("BT: ", "sem onCLick got semaphore, should be delayed print");
+                    click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor);
+
+                } catch (InterruptedException e) {
+                    Log.v("BT: ", "sem onClick, could not lock discovered list: " + e.toString());
+                }
+                calling_FloorAct.discoveredList_sem.release();
+            } else {
+                // device already paired so cancel discovery in case it is enabled
+                if(mBluetoothAdapter.isDiscovering()){
+                    mBluetoothAdapter.cancelDiscovery();
+                }
+            }
+
             if(click_ret == false){
+                // if still false after looking through the current discovered list, it tries to scan one more time
                 // attmept 1 refresh to see if it can discover it.
                 calling_FloorAct.BT_refresh();
-                click_ret = calling_FloorAct.onClickBTcheck(clickedDoor, devMAC); // look through discovered devices and attempt to pair if found.
+                //semaphore for the discovered list so we wait until its populated before looking through it
+                try {
+                    calling_FloorAct.discoveredList_sem.acquire();
+                    Log.v("Sem: ", "onCLick got semaphore, should be delayed print");
+                    click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor); // look through discovered devices and attempt to pair if found.
+                } catch (InterruptedException e){
+                    Log.v("Sem: ", "onClick, could not lock discovered list: " + e.toString());
+                }
+                calling_FloorAct.discoveredList_sem.release();
             }
 
             // checks if device was paired and able to communicate.
-            UUID currUUID = null;
-            BluetoothDevice currDev = clickedDoor.getBt_dev();
-            if(click_ret == true){
-                //todo can send message
-                //currUUID = calling_FloorAct.getUUID(currDev);
+            if(click_ret == true) {
+                Semaphore sem_response = new Semaphore(1);
+                // can send message
+                BluetoothDevice sendToDev = mBluetoothAdapter.getRemoteDevice(devMAC);
+                setupComms(sendToDev, MY_UUID_INSECURE, sem_response); //MY_UUID_INSECURE
 
-                //UUID yeet = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
-                calling_FloorAct.setupComms(currDev, MY_UUID_INSECURE);
+                // create message
+                AccReq_CreateReqPacket o_AccessReq = new AccReq_CreateReqPacket(button_IP, devName, devPort, employeeCard);
+                byte[] sendPacket = o_AccessReq.getReqMsg();
+
+                // attmept to send, response in handler.
+                // todo, comment out to test connect to RPi
+                try {
+                    BTconnectedSem.acquire();
+                } catch (InterruptedException e) {
+                    Log.v("BT: ", "sem for sending was interrupted");
+                }
+                if (mTransferService.getState() == mTransferService.STATE_CONNECTED) {
+                    String message = "yeeeet";
+                    byte[] send = message.getBytes();
+                    sendMessage(send);
+
+                }
+                BTconnectedSem.release();
+
+                try {
+                    sem_response.acquire();
+
+                    byte[] b_response = mTransferService.get_b_Msg();
+                    // todo order transfers if another button was clicked was clicked during a transfer
+                    // todo, click queue for in order, test tomorow with simultaneous clicks and it should follow an order of turning green
+                    Log.v("BT: ", "sem response " + b_response.toString());
+                    BT_analyze_response(b_response, IB);
+                } catch (InterruptedException e) {
+                    Log.v("BT: ", "sem for check response was interrupted");
+                }
+                sem_response.release();
+                Log.v("BT: ", "before wait");
+                /*
+                final Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.v("BT: ", "IN wait");
+                        // Do something after 5s = 5000ms
+                        // change door to closed icon
+                        calling_FloorAct.iconClosedDoor(IB);
+                        //BTcurrentDevSem.release();
+                        //mTransferService.stop();
+                    }
+                }, 5000);
+                */
+
+                // need to stop after finished
+
+                // for testing stop the service here by stopping all threads
 
 
             } else {
@@ -578,11 +673,161 @@ public class Data_Controller {
     }
 
 
+    public void setDoorClosed_timed(ImageButton clickedBtn){
+        final ImageButton imgB = clickedBtn;
+        final Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Do something after 5s = 5000ms
+                // change door to closed icon
+                Log.v("BT: ", "after wait");
+                calling_FloorAct.iconClosedDoor(imgB);
+                //BTcurrentDevSem.release();
+            }
+        }, 5000);
+
+
+    }
+
     public String getFullImgPath(){
         return full_img_path;
     }
 
 
+    public void setupComms(BluetoothDevice btD, UUID btUUID, Semaphore sem_resp){
+        BTconnectedSem = new Semaphore(1);
+        if(mBluetoothAdapter == null) {
+            mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
+
+        if(!mBluetoothAdapter.isEnabled()){
+            // message for BT is currently disabled
+        } else {
+            //mTransferService = new BlueTooth_service(currContext, mHandler);
+            mTransferService = new BluetoothChatService(currContext, mHandler, BTconnectedSem, sem_resp);
+            mTransferService.connect(btD, true);
+        }
+    }
+
+    // Sends message to the remote device
+    // @param message a string of text to send
+    public void sendMessage(byte[] message){
+
+        // check if connection is active
+        if (mTransferService.getState() != BlueTooth_service.STATE_CONNECTED){
+            Log.v("BluetoothChatService", "BT: SendMessage fail due to not connected");
+            return;
+        }
+
+        // Check that there's actually something to send
+        if(message.length > 0){
+            Log.v("BluetoothChatService", "BT: SendMessage");
+            // Get the message bytes and tell the Bluetooth_service to write
+            //byte[] send = message.getBytes();
+            mTransferService.write(message);
+
+        }
+    }
 
 
+    // analyze response for door access command
+    private void BT_analyze_response(byte[] b_msg, ImageButton clickedBtn){
+        Log.v("BT: ", "ANALYZE");
+        calling_FloorAct.iconOpenDoor(clickedBtn); //todo to test change, write 28 byte message
+        Log.v("BT: ", "AN");
+
+        int packetLen = b_msg.length;
+        // // packet.getData and packet.getLength
+        AccReq_AnalyzeResponse AR_AR = new AccReq_AnalyzeResponse(b_msg, packetLen);
+        int cmdCode = AR_AR.checkCmdSegment();
+
+        AccReq_Body AR_B = new AccReq_Body(b_msg);
+
+        switch(cmdCode) // based on the message command, create a return message and send it
+        {
+            case AccReq_packet_props.CMD_OK:    // cmd 4096
+                Log.v("RESPONSE: ", "BT transfer CMD_OK received: " + AccReq_packet_props.unpackByteArr(AR_B.getBodyFromMsg(packetLen)) + ": with " + packetLen + " bytes.");
+                // This command indicates request accepted and door open
+                calling_FloorAct.iconOpenDoor(clickedBtn);
+                break;
+            //return 1;
+
+            case AccReq_packet_props.CMD_ERROR_ID_IDCOMPL_NOT_MATCH:
+                Log.v("RESPONSE: ", "BT transfer CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
+                calling_FloorAct.iconErrorDoor(clickedBtn);
+                break;
+            case AccReq_packet_props.CMD_ERROR_REMOTE_ACCESS_DENIED:
+                Log.v("RESPONSE: ", "BT transfer CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
+                calling_FloorAct.iconErrorDoor(clickedBtn);
+                break;
+            default:
+                break;
+        }
+
+        setDoorClosed_timed(clickedBtn);
+    }
+
+
+    // Create Handler that gets information back from the Bluetooth_service
+    private final Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg){
+            switch (msg.what){
+                case Bluetooth_constants.MESSAGE_STATE_CHANGE:
+                    switch (msg.arg1) {
+                        case BlueTooth_service.STATE_CONNECTED:
+                            Log.v("BluetoothChatService", "BT: Connected to: " + mConnectedDeviceName);
+
+                            //BT_responseFlag = Bluetooth_constants.BT_Connected; // set flag to indicate successful connection
+                            break;
+                        case BlueTooth_service.STATE_CONNECTING:
+                            Log.v("BluetoothChatService", "BT: Connecting");
+                            break;
+                        case BlueTooth_service.STATE_LISTEN:
+                            // check next case
+                        case BlueTooth_service.STATE_NONE:
+
+                            Log.v("BluetoothChatService", "BT: Not connected");
+                            break;
+
+                        default:
+                            break;
+
+                    }
+                    break;
+                case Bluetooth_constants.MESSAGE_WRITE:
+                    byte[] writeBuf = (byte[]) msg.obj;
+                    // construct a string from the valid bytes
+                    String writeMessage = new String(writeBuf); // this is what this class writes to remote device
+                    Log.d("BluetoothChatService", "Data_controller: sending msg of: " + writeMessage);
+                    break;
+                case Bluetooth_constants.MESSAGE_READ:
+                    byte[] readBuf = (byte[])msg.obj;
+                    // construct a string from the valid bytes in the buffer
+                    // this is the response from the remote device
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+
+                    Log.v("TASK: ", "BT: The response from the remote device is: " + readMessage);
+
+                    // analyze the contents and determine what to do
+                    //BT_analyze_response(readBuf);
+                    break;
+                case Bluetooth_constants.MESSAGE_DEVICE_NAME:
+                    mConnectedDeviceName = msg.getData().getString(Bluetooth_constants.DEVICE_NAME);
+                    Log.v("TASK: ", "BT: Device name: " + mConnectedDeviceName);
+                    break;
+                case Bluetooth_constants.MESSAGE_TOAST:
+                    break;
+
+            }
+        }
+    };
+
+    public void onDestroy() {
+
+        if (mTransferService != null) {
+            mTransferService.stop();
+        }
+    }
 }
