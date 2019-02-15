@@ -494,7 +494,7 @@ public class Data_Controller {
                 // create message
                 AccReq_CreateReqPacket o_AccessReq = new AccReq_CreateReqPacket(button_IP, devName, devPort, employeeCard);
                 byte[] sendPacket = o_AccessReq.getReqMsg();
-
+        
                 // attmept to send, response in handler.
                 // todo, comment out to test connect to RPi
                 try {
@@ -512,12 +512,16 @@ public class Data_Controller {
 
                 try {
                     sem_response.acquire();
-
+    
                     byte[] b_response = mTransferService.get_b_Msg();
-                    // todo order transfers if another button was clicked was clicked during a transfer
-                    // todo, click queue for in order, test tomorow with simultaneous clicks and it should follow an order of turning green
-                    Log.v("BT: ", "sem response " + b_response.toString());
-                    BT_analyze_response(b_response, IB);
+                    
+                    if(b_response != null){
+                        
+                        // todo order transfers if another button was clicked was clicked during a transfer
+                        // todo, click queue for in order, test tomorow with simultaneous clicks and it should follow an order of turning green
+                        Log.v("BT: ", "sem response " + b_response.toString());
+                        BT_analyze_response(b_response, IB);
+                    }
                 } catch (InterruptedException e) {
                     Log.v("BT: ", "sem for check response was interrupted");
                 }
@@ -750,22 +754,26 @@ public class Data_Controller {
                 Log.v("RESPONSE: ", "BT transfer CMD_OK received: " + AccReq_packet_props.unpackByteArr(AR_B.getBodyFromMsg(packetLen)) + ": with " + packetLen + " bytes.");
                 // This command indicates request accepted and door open
                 calling_FloorAct.iconOpenDoor(clickedBtn);
+                setDoorClosed_timed(clickedBtn);
                 break;
             //return 1;
 
             case AccReq_packet_props.CMD_ERROR_ID_IDCOMPL_NOT_MATCH:
                 Log.v("RESPONSE: ", "BT transfer CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
                 calling_FloorAct.iconErrorDoor(clickedBtn);
+                setDoorClosed_timed(clickedBtn);
                 break;
             case AccReq_packet_props.CMD_ERROR_REMOTE_ACCESS_DENIED:
                 Log.v("RESPONSE: ", "BT transfer CMD_ERROR_REMOTE_ACCESS_DENIED received: " + AR_B.getBodyFromMsg(packetLen) + ": with " + packetLen + " bytes.");
                 calling_FloorAct.iconErrorDoor(clickedBtn);
+                setDoorClosed_timed(clickedBtn);
                 break;
             default:
+                // no valid code from the response header
                 break;
         }
 
-        setDoorClosed_timed(clickedBtn);
+        
     }
 
 
