@@ -43,7 +43,7 @@ public class BluetoothChatService {
     Semaphore sem_connect;
     Semaphore sem_response;
 
-    protected byte[] ret_bMsg;
+    protected byte[] ret_bMsg = null;
 
     // Debugging
     private static final String TAG = "BluetoothChatService";
