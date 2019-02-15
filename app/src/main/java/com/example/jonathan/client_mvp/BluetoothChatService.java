@@ -83,11 +83,7 @@ public class BluetoothChatService {
     public BluetoothChatService(Context context, Handler handler, Semaphore sem_connect, Semaphore sem_resp) {
         this.sem_connect = sem_connect;
         this.sem_response = sem_resp;
-        try {
-            sem_response.acquire();
-        } catch (InterruptedException e){
-
-        }
+       
         // acquire sem lock for connect
         try {
             sem_connect.acquire(); // the release is when the connection is complete in BluetoothChatService ConnectedThread
@@ -294,9 +290,10 @@ public class BluetoothChatService {
         mState = STATE_NONE;
         // Update UI title
         updateUserInterfaceTitle();
-
+        this.stop();
+        sem_connect.release();
         // Start the service over to restart listening mode
-        BluetoothChatService.this.start();
+        ///BluetoothChatService.this.start();
     }
 
     /**
@@ -313,7 +310,8 @@ public class BluetoothChatService {
         mState = STATE_NONE;
         // Update UI title
         updateUserInterfaceTitle();
-
+        
+        sem_connect.release();
         // end this thread.
         this.stop();
 
@@ -519,6 +517,11 @@ public class BluetoothChatService {
             byte[] buffer = new byte[1024];
             int bytes;
 
+            try {
+                sem_response.acquire(); // get sem for reading response
+            } catch (InterruptedException e){
+                Log.v(TAG, "sem for reading response was interrupted");
+            }
             // release it regardless of the state
             sem_connect.release(); // the acquire is when BluetoothChatService is initialized in the constructor
 
@@ -545,10 +548,12 @@ public class BluetoothChatService {
 
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
+                    sem_response.release();
                     connectionLost();
                     break;
                 }
             }
+            // this.stop();
         }
 
         /**
