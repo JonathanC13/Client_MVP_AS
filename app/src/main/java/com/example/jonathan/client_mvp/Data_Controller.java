@@ -52,8 +52,7 @@ import android.widget.RelativeLayout.LayoutParams;
 public class Data_Controller {
 
     Semaphore BTconnectedSem; // semaphore to block until connection to desired BT device is made before doing any transfers
-    //Semaphore BTcurrentDevSem; // semaphore to manage the queue for the devices
-    //ArrayList<ImageButton> queuedBtns = new ArrayList<ImageButton>();
+    Semaphore BTadapterSem; // only allow one BT connection at a time
 
     // <File system info>
     private String curr_app_dir;
@@ -92,13 +91,14 @@ public class Data_Controller {
     //private BlueTooth_service mTransferService = null;
     private BluetoothChatService mTransferService = null;
     BluetoothAdapter mBluetoothAdapter;
-    private static final UUID MY_UUID_INSECURE = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+    private static final UUID MY_UUID_SECURE = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
             //"0000110a-0000-1000-8000-00805f9b34fb");
 
 
     public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, FloorActivity flrAct){
         //BTcurrentDevSem = new Semaphore(1);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        BTadapterSem = new Semaphore(1, true);
 
         //Calling activity handles bluetooth
         calling_FloorAct = flrAct;
@@ -443,114 +443,130 @@ public class Data_Controller {
 
                 }
 */
-            // todo, FIRST THING, test paired list, discovered list.
-            // Test RPi connection, 1. turn on discoverable on RPi, 2. Start this app, it should try and auto pair.
-            // 3. replace busy waiting for connected BT
-            Boolean click_ret = false;
-
-            // look in the paired list first
-            click_ret = calling_FloorAct.checkPairedList(clickedDoor);
-
-            if(click_ret == false) {
-                //if not paired already, need to search discovered devices, this requires waiting if the discovered list is being used
+                // todo, FIRST THING, test paired list, discovered list.
+                // Test RPi connection, 1. turn on discoverable on RPi, 2. Start this app, it should try and auto pair.
+                // 3. replace busy waiting for connected BT
                 try {
-                    calling_FloorAct.discoveredList_sem.acquire(); //
-                    Log.v("BT: ", "sem onCLick got semaphore, should be delayed print");
-                    click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor);
-
-                } catch (InterruptedException e) {
-                    Log.v("BT: ", "sem onClick, could not lock discovered list: " + e.toString());
-                }
-                calling_FloorAct.discoveredList_sem.release();
-            } else {
-                // device already paired so cancel discovery in case it is enabled
-                if(mBluetoothAdapter.isDiscovering()){
-                    mBluetoothAdapter.cancelDiscovery();
-                }
-            }
-
-            if(click_ret == false){
-                // if still false after looking through the current discovered list, it tries to scan one more time
-                // attmept 1 refresh to see if it can discover it.
-                calling_FloorAct.BT_refresh();
-                //semaphore for the discovered list so we wait until its populated before looking through it
-                try {
-                    calling_FloorAct.discoveredList_sem.acquire();
-                    Log.v("Sem: ", "onCLick got semaphore, should be delayed print");
-                    click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor); // look through discovered devices and attempt to pair if found.
+                    Log.v("BT: ", "================ waiting for click sem");
+                    BTadapterSem.acquire();
                 } catch (InterruptedException e){
-                    Log.v("Sem: ", "onClick, could not lock discovered list: " + e.toString());
+                    Log.v("BT: ", "click BT device sem interrupted. " + e.toString());
                 }
-                calling_FloorAct.discoveredList_sem.release();
-            }
 
-            // checks if device was paired and able to communicate.
-            if(click_ret == true) {
-                Semaphore sem_response = new Semaphore(1);
-                // can send message
-                BluetoothDevice sendToDev = mBluetoothAdapter.getRemoteDevice(devMAC);
-                setupComms(sendToDev, MY_UUID_INSECURE, sem_response); //MY_UUID_INSECURE
+                Boolean click_ret = false;
 
-                // create message
-                AccReq_CreateReqPacket o_AccessReq = new AccReq_CreateReqPacket(button_IP, devName, devPort, employeeCard);
-                byte[] sendPacket = o_AccessReq.getReqMsg();
-        
-                // attmept to send, response in handler.
-                // todo, comment out to test connect to RPi
-                try {
-                    BTconnectedSem.acquire();
-                } catch (InterruptedException e) {
-                    Log.v("BT: ", "sem for sending was interrupted");
-                }
-                if (mTransferService.getState() == mTransferService.STATE_CONNECTED) {
-                    String message = "yeeeet";
-                    byte[] send = message.getBytes();
-                    sendMessage(send);
+                // look in the paired list first
+                click_ret = calling_FloorAct.checkPairedList(clickedDoor);
 
-                }
-                BTconnectedSem.release();
+                if(click_ret == false) {
+                    //if not paired already, need to search discovered devices, this requires waiting if the discovered list is being used
+                    try {
+                        calling_FloorAct.discoveredList_sem.acquire(); //
+                        Log.v("BT: ", "sem onCLick got semaphore, should be delayed print");
+                        click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor);
 
-                try {
-                    sem_response.acquire();
-    
-                    byte[] b_response = mTransferService.get_b_Msg();
-                    
-                    if(b_response != null){
-                        
-                        // todo order transfers if another button was clicked was clicked during a transfer
-                        // todo, click queue for in order, test tomorow with simultaneous clicks and it should follow an order of turning green
-                        Log.v("BT: ", "sem response " + b_response.toString());
-                        BT_analyze_response(b_response, IB);
+                    } catch (InterruptedException e) {
+                        Log.v("BT: ", "sem onClick, could not lock discovered list: " + e.toString());
+                        BTadapterSem.release();
                     }
-                } catch (InterruptedException e) {
-                    Log.v("BT: ", "sem for check response was interrupted");
-                }
-                sem_response.release();
-                Log.v("BT: ", "before wait");
-                /*
-                final Handler handler = new Handler(Looper.getMainLooper());
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.v("BT: ", "IN wait");
-                        // Do something after 5s = 5000ms
-                        // change door to closed icon
-                        calling_FloorAct.iconClosedDoor(IB);
-                        //BTcurrentDevSem.release();
-                        //mTransferService.stop();
+                    calling_FloorAct.discoveredList_sem.release();
+                } else {
+                    // device already paired so cancel discovery in case it is enabled
+                    if(mBluetoothAdapter.isDiscovering()){
+                        mBluetoothAdapter.cancelDiscovery();
                     }
-                }, 5000);
-                */
+                }
 
-                // need to stop after finished
+                if(click_ret == false){
+                    // if still false after looking through the current discovered list, it tries to scan one more time
+                    // attmept 1 refresh to see if it can discover it.
+                    calling_FloorAct.BT_refresh();
+                    //semaphore for the discovered list so we wait until its populated before looking through it
+                    try {
+                        calling_FloorAct.discoveredList_sem.acquire();
+                        Log.v("Sem: ", "onCLick got semaphore, should be delayed print");
+                        click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor); // look through discovered devices and attempt to pair if found.
+                    } catch (InterruptedException e){
+                        Log.v("Sem: ", "onClick, could not lock discovered list: " + e.toString());
+                        BTadapterSem.release();
+                    }
+                    calling_FloorAct.discoveredList_sem.release();
+                }
 
-                // for testing stop the service here by stopping all threads
+                // checks if device was paired and able to communicate.
+                if(click_ret == true) {
+                    Semaphore sem_response = new Semaphore(1, true); // FIFO
+                    // can send message
+                    BluetoothDevice sendToDev = mBluetoothAdapter.getRemoteDevice(devMAC);
+                    setupComms(sendToDev, MY_UUID_SECURE, sem_response); //MY_UUID_SECURE
+
+                    // create message
+                    AccReq_CreateReqPacket o_AccessReq = new AccReq_CreateReqPacket(button_IP, devName, devPort, employeeCard);
+                    byte[] sendPacket = o_AccessReq.getReqMsg();
+
+                    // attmept to send, response in handler.
+                    // todo, comment out to test connection to RPi before doing any writing
+                    /*
+                    try {
+                        BTconnectedSem.acquire();
+                    } catch (InterruptedException e) {
+                        Log.v("BT: ", "sem for sending was interrupted");
+                        BTadapterSem.release();
+                    }
+                    if (mTransferService.getState() == mTransferService.STATE_CONNECTED) {
+                        //String message = "yeeeet";
+                        //byte[] send = message.getBytes();
+                        //sendMessage(sendPacket);
+
+                    }
+                    BTconnectedSem.release();
+                    */
+
+                    try {
+                        sem_response.acquire();
+                        BTadapterSem.release(); // once response sem is received, then the next BT device can do their connection.
+                        byte[] b_response = mTransferService.get_b_Msg();
+
+                        if(b_response != null){
+
+                            Log.v("BT: ", "sem response " + b_response.toString());
+                            BT_analyze_response(b_response, IB);
+                            mTransferService.stop();
+                            Log.v("BT: ", "currentState: " + mTransferService.getState());
+                        }
+                    } catch (InterruptedException e) {
+                        Log.v("BT: ", "sem for check response was interrupted");
+                        mTransferService.stop();
+                        BTadapterSem.release();
+                    }
+                    sem_response.release();
+
+                    /*
+                    final Handler handler = new Handler(Looper.getMainLooper());
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.v("BT: ", "IN wait");
+                            // Do something after 5s = 5000ms
+                            // change door to closed icon
+                            calling_FloorAct.iconClosedDoor(IB);
+                            //BTcurrentDevSem.release();
+                            //mTransferService.stop();
+                        }
+                    }, 5000);
+                    */
+
+                    // need to stop after finished
+
+                    // for testing stop the service here by stopping all threads
 
 
-            } else {
-                // failed to pair and probably cannot send message
-                calling_FloorAct.iconClosedDoor(IB);
-            }
+                } else {
+                    // failed to pair and probably cannot send message
+                    BTadapterSem.release(); // release to allow next BT request
+                    calling_FloorAct.iconClosedDoor(IB);
+                }
+
 
                 // bt test
 
@@ -700,7 +716,7 @@ public class Data_Controller {
 
 
     public void setupComms(BluetoothDevice btD, UUID btUUID, Semaphore sem_resp){
-        BTconnectedSem = new Semaphore(1);
+        BTconnectedSem = new Semaphore(1, true); // FIFO
         if(mBluetoothAdapter == null) {
             mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         }
@@ -738,13 +754,15 @@ public class Data_Controller {
     // analyze response for door access command
     private void BT_analyze_response(byte[] b_msg, ImageButton clickedBtn){
         Log.v("BT: ", "ANALYZE");
-        calling_FloorAct.iconOpenDoor(clickedBtn); //todo to test change, write 28 byte message
-        Log.v("BT: ", "AN");
+
 
         int packetLen = b_msg.length;
         // // packet.getData and packet.getLength
         AccReq_AnalyzeResponse AR_AR = new AccReq_AnalyzeResponse(b_msg, packetLen);
-        int cmdCode = AR_AR.checkCmdSegment();
+        //int cmdCode = AR_AR.checkCmdSegment();
+        int cmdCode = 4096;
+
+        Log.v("BT: ", "int cmd: " + cmdCode);
 
         AccReq_Body AR_B = new AccReq_Body(b_msg);
 
@@ -770,6 +788,7 @@ public class Data_Controller {
                 break;
             default:
                 // no valid code from the response header
+
                 break;
         }
 

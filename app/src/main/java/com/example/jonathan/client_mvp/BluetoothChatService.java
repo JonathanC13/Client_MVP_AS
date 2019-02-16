@@ -518,7 +518,7 @@ public class BluetoothChatService {
             int bytes;
 
             try {
-                sem_response.acquire(); // get sem for reading response
+                sem_response.acquire(); // get sem for reading response, get it before releasing sem_connect so the click thread has to wait for real response
             } catch (InterruptedException e){
                 Log.v(TAG, "sem for reading response was interrupted");
             }
@@ -540,7 +540,7 @@ public class BluetoothChatService {
                             .sendToTarget();
 
                     if(ret_bMsg.length > 0){
-                        Log.v(TAG, "==== REC: " + buffer.toString());
+                        Log.v(TAG, "BT: REC: " + AccReq_packet_props.unpackByteArr(buffer));
 
                         sem_response.release();
                         break;
@@ -548,12 +548,13 @@ public class BluetoothChatService {
 
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
-                    sem_response.release();
+
                     connectionLost();
+                    sem_response.release();
                     break;
                 }
             }
-            // this.stop();
+
         }
 
         /**

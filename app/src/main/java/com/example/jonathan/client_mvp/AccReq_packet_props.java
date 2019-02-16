@@ -57,6 +57,7 @@ public class AccReq_packet_props {
 
     }
 
+    // print bits
     public static String unpackByteArr(byte[] b_arr){
         String s_complete = "";
         for(int i = 0; i < b_arr.length; i ++) {

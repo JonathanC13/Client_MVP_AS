@@ -76,7 +76,7 @@ public class FloorActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        discoveredList_sem = new Semaphore(1);
+        discoveredList_sem = new Semaphore(1,true); //FIFO
         dataPull = null;
 
         String s_fail = "fail";
@@ -537,7 +537,7 @@ public class FloorActivity extends AppCompatActivity {
                         Log.v("BT: ", "<iterateBluetoothDevices> Discovery cancel");
                         mBluetoothAdapter.cancelDiscovery();
                     }
-                    printDiscoveredDevices();
+                    //printDiscoveredDevices();
 
                     //
                     attemptPairAll();
@@ -556,6 +556,9 @@ public class FloorActivity extends AppCompatActivity {
     };
 
     public boolean checkPairedList(door_struct dr){
+
+        pairedDevices = mBluetoothAdapter.getBondedDevices();
+
         BluetoothDevice btDev_placeholder = null;
         BluetoothDevice currentBT_dev = dr.getBt_dev();
         String devMAC = dr.getDev_MAC();
@@ -703,7 +706,8 @@ public class FloorActivity extends AppCompatActivity {
             } catch(Exception e){}
 
             Log.v("BT START: ", "onClickBTcheck > paired end with bond result " + createdPair );
-            return createdPair; // true if paired properly or false if failed
+
+            return checkPairedList(dr); // instead of returning result of bonded (even when the RPi is already paired, it appears in the discovered list again and causes an additional bond attempt which will return false), do a check through paired devices
 
         } else {
             // if was not found in discovered list, then return false
