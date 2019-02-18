@@ -4,6 +4,7 @@ import android.util.Log;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 public class AccReq_CreateReqPacket {
 
@@ -20,6 +21,7 @@ public class AccReq_CreateReqPacket {
 
         // <initialize buffer to max size the packet should be>
         b_req_msg = new byte[pack_props.MAX_UDP_MSGSIZE];
+        this.zeroPacket();
         // </>
 
         // <get this (sender) IP>
@@ -83,6 +85,10 @@ public class AccReq_CreateReqPacket {
 
     public byte[] getReqMsg(){
         return b_req_msg;
+    }
+
+    private void zeroPacket(){
+        Arrays.fill(this.b_req_msg, (byte) 0);
     }
 
     protected void compactMsg(){

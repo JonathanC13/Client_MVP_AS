@@ -86,6 +86,7 @@ public class Data_Controller {
     Context currContext;
 
     FloorActivity calling_FloorAct;
+    Bluetooth_Device_management BT_devManage;
 
     private String mConnectedDeviceName = null;
     //private BlueTooth_service mTransferService = null;
@@ -95,7 +96,8 @@ public class Data_Controller {
             //"0000110a-0000-1000-8000-00805f9b34fb");
 
 
-    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, FloorActivity flrAct){
+    public Data_Controller(String appDIR, ConstraintLayout grd_s, float IV_scale, Context cont, FloorActivity flrAct, Bluetooth_Device_management BT_dev_mng){
+        BT_devManage = BT_dev_mng;
         //BTcurrentDevSem = new Semaphore(1);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         BTadapterSem = new Semaphore(1, true);
@@ -456,20 +458,20 @@ public class Data_Controller {
                 Boolean click_ret = false;
 
                 // look in the paired list first
-                click_ret = calling_FloorAct.checkPairedList(clickedDoor);
+                click_ret = BT_devManage.checkPairedList(clickedDoor);
 
                 if(click_ret == false) {
                     //if not paired already, need to search discovered devices, this requires waiting if the discovered list is being used
                     try {
-                        calling_FloorAct.discoveredList_sem.acquire(); //
+                        BT_devManage.discoveredList_sem.acquire(); //
                         Log.v("BT: ", "sem onCLick got semaphore, should be delayed print");
-                        click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor);
+                        click_ret = BT_devManage.checkAndAttemptPair(clickedDoor);
 
                     } catch (InterruptedException e) {
                         Log.v("BT: ", "sem onClick, could not lock discovered list: " + e.toString());
                         BTadapterSem.release();
                     }
-                    calling_FloorAct.discoveredList_sem.release();
+                    BT_devManage.discoveredList_sem.release();
                 } else {
                     // device already paired so cancel discovery in case it is enabled
                     if(mBluetoothAdapter.isDiscovering()){
@@ -480,17 +482,17 @@ public class Data_Controller {
                 if(click_ret == false){
                     // if still false after looking through the current discovered list, it tries to scan one more time
                     // attmept 1 refresh to see if it can discover it.
-                    calling_FloorAct.BT_refresh();
+                    BT_devManage.BT_refresh();
                     //semaphore for the discovered list so we wait until its populated before looking through it
                     try {
-                        calling_FloorAct.discoveredList_sem.acquire();
+                        BT_devManage.discoveredList_sem.acquire();
                         Log.v("Sem: ", "onCLick got semaphore, should be delayed print");
-                        click_ret = calling_FloorAct.checkAndAttemptPair(clickedDoor); // look through discovered devices and attempt to pair if found.
+                        click_ret = BT_devManage.checkAndAttemptPair(clickedDoor); // look through discovered devices and attempt to pair if found.
                     } catch (InterruptedException e){
                         Log.v("Sem: ", "onClick, could not lock discovered list: " + e.toString());
                         BTadapterSem.release();
                     }
-                    calling_FloorAct.discoveredList_sem.release();
+                    BT_devManage.discoveredList_sem.release();
                 }
 
                 // checks if device was paired and able to communicate.
@@ -506,7 +508,7 @@ public class Data_Controller {
 
                     // attmept to send, response in handler.
                     // todo, comment out to test connection to RPi before doing any writing
-                    /*
+
                     try {
                         BTconnectedSem.acquire();
                     } catch (InterruptedException e) {
@@ -516,22 +518,23 @@ public class Data_Controller {
                     if (mTransferService.getState() == mTransferService.STATE_CONNECTED) {
                         //String message = "yeeeet";
                         //byte[] send = message.getBytes();
-                        //sendMessage(sendPacket);
+                        sendMessage(sendPacket);
 
                     }
                     BTconnectedSem.release();
-                    */
+
 
                     try {
                         sem_response.acquire();
-                        BTadapterSem.release(); // once response sem is received, then the next BT device can do their connection.
                         byte[] b_response = mTransferService.get_b_Msg();
+
+                        mTransferService.stop();
+                        BTadapterSem.release(); // once response sem is received, then the next BT device can do their connection.
 
                         if(b_response != null){
 
                             Log.v("BT: ", "sem response " + b_response.toString());
                             BT_analyze_response(b_response, IB);
-                            mTransferService.stop();
                             Log.v("BT: ", "currentState: " + mTransferService.getState());
                         }
                     } catch (InterruptedException e) {
